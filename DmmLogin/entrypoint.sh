@@ -1,4 +1,4 @@
 #!/bin/bash
-env | grep DatabaseConn >> /etc/environment
+DatabaseConn=TEST echo "export $(env | grep DatabaseConn)"
 cron start
 tail -f /var/log/cron.log

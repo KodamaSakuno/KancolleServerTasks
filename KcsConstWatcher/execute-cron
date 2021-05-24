@@ -1,1 +1,1 @@
-*/10 * * * * /app/KcsConstWatcher >> /var/log/cron.log 2>&1
+*/10 * * * * . /app/.env; /app/KcsConstWatcher >> /var/log/cron.log 2>&1
