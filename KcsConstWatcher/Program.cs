@@ -31,6 +31,6 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
-await connection.ExecuteAsync("INSERT INTO kancolle_resources.kcs_const VALUES(@version, @content);", new { version = lastModified, content = responseString });
+await connection.ExecuteAsync("INSERT INTO kcs_const VALUES(@version, @content);", new { version = lastModified, content = responseString });
 
 logger.Information("Saved");
