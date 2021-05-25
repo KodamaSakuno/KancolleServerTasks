@@ -11,7 +11,7 @@ await using var connection = new NpgsqlConnection(Environment.GetEnvironmentVari
 
 using var client = new HttpClient();
 
-var latestTimestamp = await connection.ExecuteScalarAsync<DateTimeOffset?>("SELECT version FROM kcs_const ORDER BY version DESC LIMIT 1;");
+var latestTimestamp = (DateTimeOffset?)await connection.ExecuteScalarAsync<DateTime?>("SELECT version FROM kcs_const ORDER BY version DESC LIMIT 1;");
 
 using var request = new HttpRequestMessage(HttpMethod.Get, "http://203.104.209.7/gadget_html5/js/kcs_const.js");
 request.Headers.IfModifiedSince = latestTimestamp;
