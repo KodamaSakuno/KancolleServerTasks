@@ -5,7 +5,7 @@ using PuppeteerSharp.Input;
 using Serilog;
 using System;
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn"));
+await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
 
 var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 

@@ -7,7 +7,7 @@ using System.Net.Http;
 
 var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
-await using var connection = new NpgsqlConnection();
+await using var connection = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
 
 using var client = new HttpClient();
 
