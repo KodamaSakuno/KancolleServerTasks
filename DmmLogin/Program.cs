@@ -60,7 +60,7 @@ try
         return;
     }
 
-    await pg.ExecuteAsync("INSERT INTO store VALUES('game_url', @url::jsonb) ON CONFLICT (name) DO UPDATE SET value = excluded.value;", new { url });
+    await pg.ExecuteAsync("INSERT INTO store VALUES('game_url', @url::jsonb) ON CONFLICT (name) DO UPDATE SET value = excluded.value;", new { url = '"' + url + '"' });
 
     logger.Information("Success");
 }
