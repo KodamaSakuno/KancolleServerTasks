@@ -11,7 +11,10 @@ var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
 await new BrowserFetcher().DownloadAsync();
 
-using var browser = await Puppeteer.LaunchAsync(new() { });
+using var browser = await Puppeteer.LaunchAsync(new()
+{
+    Args = new[] { "--no-sandbox" },
+});
 
 try
 {
