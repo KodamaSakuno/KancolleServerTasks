@@ -11,7 +11,7 @@ await using var connection = new NpgsqlConnection(Environment.GetEnvironmentVari
 
 using var client = new HttpClient();
 
-var latestTimestamp = (DateTimeOffset?)await connection.ExecuteScalarAsync<DateTime?>("SELECT version FROM kcs_const ORDER BY version DESC LIMIT 1;");
+var latestTimestamp = (DateTimeOffset?)await connection.ExecuteScalarAsync<DateTime?>("SELECT max(\"timestamp\") FROM kcs_const;");
 
 using var request = new HttpRequestMessage(HttpMethod.Get, "http://203.104.209.7/gadget_html5/js/kcs_const.js");
 request.Headers.IfModifiedSince = latestTimestamp;
@@ -31,6 +31,6 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
-await connection.ExecuteAsync("INSERT INTO kcs_const VALUES(@version, @content);", new { version = lastModified, content = responseString });
+await connection.ExecuteAsync("INSERT INTO kcs_const VALUES(@timestamp, @content);", new { timestamp = lastModified, content = responseString });
 
 logger.Information("Saved");
