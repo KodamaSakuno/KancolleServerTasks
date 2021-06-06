@@ -1,0 +1,1 @@
+*/10 * * * * . /app/.env; /app/AndroidClientVersionWatcher >> /var/log/cron.log 2>&1

@@ -3,12 +3,12 @@ RUN apt-get update && apt-get -y install cron && rm -rf /var/lib/apt/lists/* && 
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
-COPY KcsConstWatcher.csproj .
-RUN dotnet restore "KcsConstWatcher.csproj" -r linux-x64
+COPY AndroidClientVersionWatcher.csproj .
+RUN dotnet restore "AndroidClientVersionWatcher.csproj" -r linux-x64
 
 FROM build AS publish
 COPY . .
-RUN dotnet publish "KcsConstWatcher.csproj" -c Release -r linux-x64 -o /app/publish
+RUN dotnet publish "AndroidClientVersionWatcher.csproj" -c Release -r linux-x64 -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron
