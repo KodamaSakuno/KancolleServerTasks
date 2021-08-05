@@ -34,7 +34,10 @@ var responseBytes = await response.Content.ReadAsByteArrayAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 var hash = SHA1.HashData(responseBytes);
 
-await File.WriteAllBytesAsync(Path.Join("/var/mainjs", Convert.ToHexString(hash) + ".json"), responseBytes);
+var filename = Path.Join("/var/mainjs", Convert.ToHexString(hash) + ".json");
+
+await File.WriteAllBytesAsync(filename, responseBytes);
+File.SetLastWriteTimeUtc(filename, lastModified.UtcDateTime);
 
 await pg.ExecuteAsync("INSERT INTO mainjs VALUES(@timestamp, @hash);", new { timestamp = lastModified, hash });
 
