@@ -34,7 +34,7 @@ var responseBytes = await response.Content.ReadAsByteArrayAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 var hash = SHA1.HashData(responseBytes);
 
-var filename = Path.Join("/var/mainjs", Convert.ToHexString(hash) + ".json");
+var filename = Path.Join("/var/mainjs", Convert.ToHexString(hash) + ".js");
 
 await File.WriteAllBytesAsync(filename, responseBytes);
 File.SetLastWriteTimeUtc(filename, lastModified.UtcDateTime);
