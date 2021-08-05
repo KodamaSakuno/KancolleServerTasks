@@ -3,12 +3,12 @@ RUN apt-get update && apt-get -y install cron && rm -rf /var/lib/apt/lists/* && 
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
-COPY MainJsFetcher.csproj .
-RUN dotnet restore "MainJsFetcher.csproj" -r linux-x64
+COPY MainJsWatcher.csproj .
+RUN dotnet restore "MainJsWatcher.csproj" -r linux-x64
 
 FROM build AS publish
 COPY . .
-RUN dotnet publish "MainJsFetcher.csproj" -c Release -r linux-x64 -o /app/publish
+RUN dotnet publish "MainJsWatcher.csproj" -c Release -r linux-x64 -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron

@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidClientVersionWatcher
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientVersionWatcher", "ClientVersionWatcher\ClientVersionWatcher.csproj", "{6439C6F4-CE30-473A-B77A-9E3E0AB98CD5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainJsFetcher", "MainJsFetcher\MainJsFetcher.csproj", "{A32F6C94-13FF-460A-AC56-102D14D8B57C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainJsWatcher", "MainJsWatcher\MainJsWatcher.csproj", "{A32F6C94-13FF-460A-AC56-102D14D8B57C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

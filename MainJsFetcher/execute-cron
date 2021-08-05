@@ -1,1 +1,0 @@
-*/10 * * * * . /app/.env; /app/MainJsFetcher >> /var/log/cron.log 2>&1
