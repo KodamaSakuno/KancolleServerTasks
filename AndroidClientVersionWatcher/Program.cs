@@ -39,19 +39,19 @@ previous AS (
     SELECT content->'scene' scenes, content->'resource' resources FROM android_client_version ORDER BY timestamp DESC OFFSET 1 LIMIT 1
 ),
 previous_scene AS (
-    SELECT scene FROM previous, json_each_text(previous.scenes) AS scene WHERE (scene).key != '_'
+    SELECT scene FROM previous, jsonb_each_text(previous.scenes) AS scene WHERE (scene).key != '_'
 ),
 previous_resource AS (
-    SELECT resource FROM previous, json_each_text(previous.resources) AS resource WHERE (resource).key != '_'
+    SELECT resource FROM previous, jsonb_each_text(previous.resources) AS resource WHERE (resource).key != '_'
 ),
 latest AS (
     SELECT content->'scene' scenes, content->'resource' resources FROM android_client_version ORDER BY timestamp DESC LIMIT 1
 ),
 latest_scene AS (
-    SELECT scene FROM latest, json_each_text(latest.scenes) AS scene WHERE (scene).key != '_'
+    SELECT scene FROM latest, jsonb_each_text(latest.scenes) AS scene WHERE (scene).key != '_'
 ),
 latest_resource AS (
-    SELECT resource FROM latest, json_each_text(latest.resources) AS resource WHERE (resource).key != '_'
+    SELECT resource FROM latest, jsonb_each_text(latest.resources) AS resource WHERE (resource).key != '_'
 ),
 diff(filename, version) AS (
     SELECT 'scenes/' || (latest_scene.scene).key || '.swf', (latest_scene.scene).value
