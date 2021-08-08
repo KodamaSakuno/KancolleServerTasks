@@ -8,6 +8,7 @@ using System.Net.Http;
 var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
 await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+await pg.OpenAsync();
 await using var transaction = await pg.BeginTransactionAsync();
 
 using var client = new HttpClient();
