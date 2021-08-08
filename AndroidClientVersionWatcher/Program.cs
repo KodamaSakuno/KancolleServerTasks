@@ -36,7 +36,7 @@ var lastModified = response.Content.Headers.LastModified!.Value;
 await pg.ExecuteAsync("INSERT INTO android_client_version VALUES(@timestamp, @content::jsonb);", new { timestamp = lastModified, content = responseString });
 await pg.ExecuteAsync(@"WITH
 previous AS (
-    SELECT json->'scene' scenes, json->'resource' resources FROM android_client_version ORDER BY version DESC OFFSET 1 LIMIT 1
+    SELECT content->'scene' scenes, content->'resource' resources FROM android_client_version ORDER BY version DESC OFFSET 1 LIMIT 1
 ),
 previous_scene AS (
     SELECT scene FROM previous, json_each_text(previous.scenes) AS scene WHERE (scene).key != '_'
@@ -45,7 +45,7 @@ previous_resource AS (
     SELECT resource FROM previous, json_each_text(previous.resources) AS resource WHERE (resource).key != '_'
 ),
 latest AS (
-    SELECT json->'scene' scenes, json->'resource' resources FROM android_client_version ORDER BY version DESC LIMIT 1
+    SELECT content->'scene' scenes, content->'resource' resources FROM android_client_version ORDER BY version DESC LIMIT 1
 ),
 latest_scene AS (
     SELECT scene FROM latest, json_each_text(latest.scenes) AS scene WHERE (scene).key != '_'
