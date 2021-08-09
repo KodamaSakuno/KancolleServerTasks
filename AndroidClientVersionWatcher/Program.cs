@@ -1,15 +1,16 @@
 ﻿using Dapper;
 using Npgsql;
+using RabbitMQ.Client;
 using Serilog;
 using System;
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 
 var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
 await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
-await pg.OpenAsync();
-await using var transaction = await pg.BeginTransactionAsync();
 
 using var client = new HttpClient();
 
@@ -30,11 +31,21 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
+var rabbitMqConnectionFactory = new ConnectionFactory()
+{
+    HostName = Environment.GetEnvironmentVariable("RabbitMQHost") ?? throw new InvalidOperationException("Missing RabbitMQHost"),
+};
+using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
+using var rabbitMqChannel = rabbitMqConnection.CreateModel();
+
+rabbitMqChannel.QueueDeclare("AndroidClientFile", false, false, false, null);
+
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
 await pg.ExecuteAsync("INSERT INTO android_client_version VALUES(@timestamp, @content::jsonb);", new { timestamp = lastModified, content = responseString });
-await pg.ExecuteAsync(@"WITH
+
+foreach (var (filename, version) in await pg.QueryAsync<(string, string)>(@"WITH
 previous AS (
     SELECT content->'scene' scenes, content->'resource' resources FROM android_client_version ORDER BY timestamp DESC OFFSET 1 LIMIT 1
 ),
@@ -52,21 +63,26 @@ latest_scene AS (
 ),
 latest_resource AS (
     SELECT resource FROM latest, jsonb_each_text(latest.resources) AS resource WHERE (resource).key != '_'
-),
-diff(filename, version) AS (
-    SELECT 'scenes/' || (latest_scene.scene).key || '.swf', (latest_scene.scene).value
-    FROM latest_scene
-    LEFT JOIN previous_scene ON (latest_scene.scene).key = (previous_scene.scene).key
-    WHERE (latest_scene.scene).value != (previous_scene.scene).value
-    UNION ALL
-    SELECT 'resources/' || (latest_resource.resource).key || '.swf', (latest_resource.resource).value
-    FROM latest_resource
-    LEFT JOIN previous_resource ON (latest_resource.resource).key = (previous_resource.resource).key
-    WHERE (latest_resource.resource).value != (previous_resource.resource).value
 )
 
-INSERT INTO android_client SELECT filename, version, NULL FROM diff;");
+SELECT 'scenes/' || (latest_scene.scene).key || '.swf', (latest_scene.scene).value
+FROM latest_scene
+LEFT JOIN previous_scene ON (latest_scene.scene).key = (previous_scene.scene).key
+WHERE (latest_scene.scene).value != (previous_scene.scene).value
+UNION ALL
+SELECT 'resources/' || (latest_resource.resource).key || '.swf', (latest_resource.resource).value
+FROM latest_resource
+LEFT JOIN previous_resource ON (latest_resource.resource).key = (previous_resource.resource).key
+WHERE (latest_resource.resource).value != (previous_resource.resource).value;"))
+{
+    var buffer = new byte[4 + filename.Length + 4 + version.Length];
 
-await transaction.CommitAsync();
+    BinaryPrimitives.WriteInt32LittleEndian(buffer, filename.Length);
+    BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(4 + filename.Length), version.Length);
+    Encoding.UTF8.GetBytes(filename, buffer.AsSpan(4));
+    Encoding.UTF8.GetBytes(version, buffer.AsSpan(4 + filename.Length + 4));
+
+    rabbitMqChannel.BasicPublish(string.Empty, "AndroidClientFile", null, buffer);
+}
 
 logger.Information("Saved");
