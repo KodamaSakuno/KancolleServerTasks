@@ -35,7 +35,7 @@ var consumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 consumer.Received += async (sender, e) =>
 {
     var (filename, version) = Parse(e.Body.Span);
-    var (content, lastModified) = await FetchFileAsync(client, filename);
+    var (content, lastModified) = await FetchFileAsync(client, filename + ".swf");
 
     var localFilename = Path.Join("/var/android_client", $"{filename}_{version}.swf");
 
