@@ -38,7 +38,7 @@ var rabbitMqConnectionFactory = new ConnectionFactory()
 using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
 using var rabbitMqChannel = rabbitMqConnection.CreateModel();
 
-rabbitMqChannel.QueueDeclare("AndroidClientFile", false, false, false, null);
+rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
 
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
