@@ -65,12 +65,12 @@ latest_resource AS (
     SELECT resource FROM latest, jsonb_each_text(latest.resources) AS resource WHERE (resource).key != '_'
 )
 
-SELECT 'scenes/' || (latest_scene.scene).key || '.swf', (latest_scene.scene).value
+SELECT 'scenes/' || (latest_scene.scene).key, (latest_scene.scene).value
 FROM latest_scene
 LEFT JOIN previous_scene ON (latest_scene.scene).key = (previous_scene.scene).key
 WHERE (latest_scene.scene).value != (previous_scene.scene).value
 UNION ALL
-SELECT 'resources/' || (latest_resource.resource).key || '.swf', (latest_resource.resource).value
+SELECT 'resources/' || (latest_resource.resource).key, (latest_resource.resource).value
 FROM latest_resource
 LEFT JOIN previous_resource ON (latest_resource.resource).key = (previous_resource.resource).key
 WHERE (latest_resource.resource).value != (previous_resource.resource).value;"))
