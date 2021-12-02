@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
-RUN apt-get update && apt-get -y install cron && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
+RUN apt-get update && apt-get -y install cron xorg openbox libnss3 libasound2 && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
+RUN dotnet tool install -g Microsoft.Playwright.CLI && playwright install chromium
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
@@ -11,7 +12,6 @@ COPY . .
 RUN dotnet publish "DmmLogin.csproj" -c Release -r linux-x64 -o /app/publish
 
 FROM base AS final
-RUN apt-get update && apt-get -y install xorg openbox libnss3 libasound2 && rm -rf /var/lib/apt/lists/*
 COPY ./execute-cron /etc/cron.d/execute-cron
 RUN chmod 0644 /etc/cron.d/execute-cron && crontab /etc/cron.d/execute-cron
 
