@@ -1,8 +1,8 @@
 FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
 RUN apt-get update && apt-get -y install cron xorg openbox libnss3 libasound2 && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
-RUN dotnet tool install -g Microsoft.Playwright.CLI && playwright install chromium
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+RUN dotnet tool install -g Microsoft.Playwright.CLI && playwright install chromium
 WORKDIR /src
 COPY DmmLogin.csproj .
 RUN dotnet restore "DmmLogin.csproj" -r linux-x64
@@ -18,6 +18,7 @@ RUN chmod 0644 /etc/cron.d/execute-cron && crontab /etc/cron.d/execute-cron
 WORKDIR /app
 COPY ./entrypoint.sh .
 RUN chmod +x entrypoint.sh
+COPY --from=build /root/.cache/ms-playwright /root/.cache/ms-playwright
 COPY --from=publish /app/publish .
 
 ENTRYPOINT ./entrypoint.sh
