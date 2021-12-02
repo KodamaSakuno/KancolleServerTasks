@@ -3,6 +3,7 @@ using Microsoft.Playwright;
 using Npgsql;
 using Serilog;
 using System;
+using System.IO;
 
 await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
 
@@ -14,10 +15,10 @@ await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeL
     Args = new[] { "--no-sandbox" },
 });
 
-await using var context = await browser.NewContextAsync(new()
+await using var context = await browser.NewContextAsync(File.Exists("state.json") ? new()
 {
     StorageStatePath = "state.json",
-});
+} : null);
 
 var page = await context.NewPageAsync();
 
