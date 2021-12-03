@@ -449,3 +449,4 @@ $RECYCLE.BIN/
 
 # Custom
 docker-compose.yml
+appsettings.Development.json
