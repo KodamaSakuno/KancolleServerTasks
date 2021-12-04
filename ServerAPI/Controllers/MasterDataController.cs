@@ -4,7 +4,7 @@ using ServerAPI.Services;
 namespace ServerAPI.Controllers;
 
 [ApiController]
-[Route("masterData")]
+[Route("master-data")]
 public class MasterDataController : ControllerBase
 {
     private readonly MasterDataService _masterDataService;
@@ -14,7 +14,7 @@ public class MasterDataController : ControllerBase
         _masterDataService = masterDataService;
     }
 
-    [HttpGet("latestVersion")]
+    [HttpGet("latest-version")]
     public async Task<DateTimeOffset> GetLatestVersion() =>
         await _masterDataService.GetLatestVersionAsync();
 }
