@@ -50,7 +50,7 @@ var obj = (JObject)json["api_data"]["api_mst_const"];
 json["api_data"]["api_mst_const"] = new JObject(obj.Properties().OrderBy(r => r.Name));
 
 await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
-
+await pg.OpenAsync();
 await using var transaction = await pg.BeginTransactionAsync();
 
 var argument = new { json = json["api_data"].ToString(Formatting.None) };
