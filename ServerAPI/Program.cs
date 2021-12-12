@@ -1,6 +1,7 @@
 using ServerAPI.Configs;
 using ServerAPI.Middlewares;
 using ServerAPI.Services;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ var databaseConfig = new DatabaseConfig();
 builder.Configuration.GetSection("Database").Bind(databaseConfig);
 builder.Services.AddSingleton(databaseConfig);
 builder.Services.AddScoped<DatabaseService>();
+
+var multiplexer = await ConnectionMultiplexer.ConnectAsync(builder.Configuration["Redis:Host"]);
+builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 
 builder.Services.AddTransient<MasterDataService>();
 
