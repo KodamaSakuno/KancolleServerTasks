@@ -1,1 +1,1 @@
-0 */2 * * * . /app/.env; /app/DmmLogin >> /var/log/cron.log 2>&1
+0 */2 * * * /app/start.sh

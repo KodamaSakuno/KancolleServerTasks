@@ -1,0 +1,2 @@
+#!/bin/bash
+. /app/.env; /app/ApiStart2Watcher >> /var/log/cron.log 2>&1

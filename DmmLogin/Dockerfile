@@ -18,8 +18,8 @@ COPY ./execute-cron /etc/cron.d/execute-cron
 RUN chmod 0644 /etc/cron.d/execute-cron && crontab /etc/cron.d/execute-cron
 
 WORKDIR /app
-COPY ./entrypoint.sh .
-RUN chmod +x entrypoint.sh
+COPY ./entrypoint.sh ./start.sh ./
+RUN chmod +x entrypoint.sh start.sh
 COPY --from=playwright /root/.cache/ms-playwright /root/.cache/ms-playwright
 COPY --from=publish /app/publish .
 
