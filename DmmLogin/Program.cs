@@ -1,11 +1,10 @@
-﻿using Dapper;
-using Microsoft.Playwright;
-using Npgsql;
+﻿using Microsoft.Playwright;
 using Serilog;
+using StackExchange.Redis;
 using System;
 using System.IO;
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
 
 var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
@@ -28,8 +27,8 @@ if (response.Url is "http://games.dmm.com/detail/kancolle/")
 {
     logger.Information("Login");
 
-    var loginId = await pg.QuerySingleAsync<string>("SELECT value #>> '{}' FROM store WHERE name = 'login_id';");
-    var loginPassword = await pg.QuerySingleAsync<string>("SELECT value #>> '{}' FROM store WHERE name = 'login_password';");
+    var loginId = Environment.GetEnvironmentVariable("LoginId") ?? throw new InvalidOperationException("Missing LoginId");
+    var loginPassword = Environment.GetEnvironmentVariable("LoginPassword") ?? throw new InvalidOperationException("LoginPassword");
 
     await page.WaitForSelectorAsync("#game-play-top");
     await page.ClickAsync("#game-play-top");
@@ -62,12 +61,21 @@ var gameHandle = await frame.WaitForSelectorAsync("#htmlWrap");
 
 var url = (await frame.EvaluateAsync("document.getElementById('htmlWrap').src")).ToString();
 
+var db = redis.GetDatabase();
+var transaction = db.CreateTransaction();
+
 if (url is "http://203.104.209.7/html/maintenance.html")
 {
+    _ = transaction.HashSetAsync("game", "maintenance", true);
+
     logger.Information("Maintenance");
-    return;
+}
+else
+{
+    _ = transaction.HashSetAsync("game", "url", url);
+    _ = transaction.HashSetAsync("game", "maintenance", false);
+
+    logger.Information("Success");
 }
 
-await pg.ExecuteAsync("INSERT INTO store VALUES('game_url', @url::jsonb) ON CONFLICT (name) DO UPDATE SET value = excluded.value;", new { url = '"' + url + '"' });
-
-logger.Information("Success");
+await transaction.ExecuteAsync();
