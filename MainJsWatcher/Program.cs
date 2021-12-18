@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Npgsql;
 using Serilog;
+using StackExchange.Redis;
 using System;
 using System.IO;
 using System.Net;
@@ -30,6 +31,9 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
+using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
+var redisDatabase = redis.GetDatabase();
+
 var responseBytes = await response.Content.ReadAsByteArrayAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 var hash = SHA1.HashData(responseBytes);
@@ -40,5 +44,7 @@ await File.WriteAllBytesAsync(filename, responseBytes);
 File.SetLastWriteTimeUtc(filename, lastModified.UtcDateTime);
 
 await pg.ExecuteAsync("INSERT INTO mainjs VALUES(@timestamp, @hash);", new { timestamp = lastModified, hash });
+
+await redisDatabase.ListRightPushAsync("tasks:logs", "main.js updated");
 
 logger.Information("Saved");

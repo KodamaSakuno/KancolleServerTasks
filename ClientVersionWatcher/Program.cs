@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Npgsql;
 using Serilog;
+using StackExchange.Redis;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -28,10 +29,15 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
+using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
+var redisDatabase = redis.GetDatabase();
+
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
 await pg.ExecuteAsync("INSERT INTO client_version VALUES(@timestamp, @content::jsonb);", new { timestamp = lastModified, content = responseString });
+
+await redisDatabase.ListRightPushAsync("tasks:logs", "HTML5 client version.json updated");
 
 logger.Information("Saved");
 

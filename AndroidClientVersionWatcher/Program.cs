@@ -2,6 +2,7 @@
 using Npgsql;
 using RabbitMQ.Client;
 using Serilog;
+using StackExchange.Redis;
 using System;
 using System.Buffers.Binary;
 using System.Net;
@@ -30,6 +31,9 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     logger.Information("Forbidden");
     return;
 }
+
+using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
+var redisDatabase = redis.GetDatabase();
 
 var rabbitMqConnectionFactory = new ConnectionFactory()
 {
@@ -84,5 +88,7 @@ WHERE (latest_resource.resource).value != (previous_resource.resource).value;"))
 
     rabbitMqChannel.BasicPublish(string.Empty, "AndroidClientFile", null, buffer);
 }
+
+await redisDatabase.ListRightPushAsync("tasks:logs", "Android client version.json updated");
 
 logger.Information("Saved");
