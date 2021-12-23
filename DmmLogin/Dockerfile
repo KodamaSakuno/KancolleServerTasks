@@ -10,8 +10,8 @@ COPY DmmLogin.csproj .
 RUN dotnet restore "DmmLogin.csproj" -r linux-x64
 
 FROM build AS publish
-COPY . .
-RUN dotnet publish "DmmLogin.csproj" -c Release -r linux-x64 -o /app/publish
+COPY Program.cs .
+RUN dotnet publish "DmmLogin.csproj" -c Release -r linux-x64 --self-contained false -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron

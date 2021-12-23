@@ -7,8 +7,8 @@ COPY ApiStart2Watcher.csproj .
 RUN dotnet restore "ApiStart2Watcher.csproj" -r linux-x64
 
 FROM build AS publish
-COPY . .
-RUN dotnet publish "ApiStart2Watcher.csproj" -c Release -r linux-x64 -o /app/publish
+COPY Program.cs .
+RUN dotnet publish "ApiStart2Watcher.csproj" -c Release -r linux-x64 --self-contained false -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron
