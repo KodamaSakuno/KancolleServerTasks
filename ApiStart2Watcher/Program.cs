@@ -64,6 +64,7 @@ if (ra == 0)
 await pg.ExecuteAsync(@"INSERT INTO current_api_start2 SELECT key, value FROM jsonb_each(@json::jsonb)
 ON CONFLICT (key) DO UPDATE SET value = excluded.value
 WHERE current_api_start2.value != excluded.value;", argument);
+await pg.ExecuteAsync("REFRESH MATERIALIZED VIEW api_start2_item_version;");
 
 await transaction.CommitAsync();
 
