@@ -19,7 +19,6 @@ var multiplexer = await ConnectionMultiplexer.ConnectAsync(builder.Configuration
 builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 
 builder.Services.AddTransient<MasterDataService>();
-builder.Services.AddSingleton<TasksService>();
 
 var app = builder.Build();
 
