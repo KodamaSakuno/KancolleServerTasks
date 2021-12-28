@@ -1,12 +1,21 @@
-﻿using Microsoft.Playwright;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Playwright;
 using Serilog;
 using StackExchange.Redis;
 using System;
 using System.IO;
 
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
+
+Directory.CreateDirectory("/var/app");
+
+using var redis = ConnectionMultiplexer.Connect(configuration["Redis:Host"]);
 
 using var playwright = await Playwright.CreateAsync();
 await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions()
@@ -14,7 +23,7 @@ await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeL
     Args = new[] { "--no-sandbox" },
 });
 
-await using var context = await browser.NewContextAsync(File.Exists("state.json") ? new()
+await using var context = await browser.NewContextAsync(File.Exists("/var/app/state.json") ? new()
 {
     StorageStatePath = "state.json",
 } : null);
@@ -51,7 +60,7 @@ if (response.Url is "http://games.dmm.com/detail/kancolle/")
 
     await context.StorageStateAsync(new()
     {
-        Path = "state.json",
+        Path = "/var/app/state.json",
     });
 }
 
