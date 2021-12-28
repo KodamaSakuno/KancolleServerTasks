@@ -62,7 +62,7 @@ consumer.Received += async (sender, e) =>
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 
-    await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $"{filename} *({version})* saved", ParseMode.Markdown, disableNotification: true);
+    await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $"{filename}.swf *({version})* saved", ParseMode.Markdown, disableNotification: true);
 
     logger.Information("Saved: {Filename} ({Version})", filename, version);
 };
