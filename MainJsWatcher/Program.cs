@@ -22,7 +22,11 @@ using var client = new HttpClient();
 
 var bot = new TelegramBotClient(configuration["Telegram:Token"]);
 
-await using var pg = new NpgsqlConnection(configuration["Database"]);
+var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration["Database"])
+{
+    SearchPath = "kancolle_resources",
+};
+await using var pg = new NpgsqlConnection(connectionStringBuilder.ToString());
 
 var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM mainjs;");
 

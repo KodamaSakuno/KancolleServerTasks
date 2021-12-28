@@ -29,7 +29,11 @@ using var client = new HttpClient();
 
 var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
 
-await using var pg = new NpgsqlConnection(configuration["Database"]);
+var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration["Database"])
+{
+    SearchPath = "kancolle",
+};
+await using var pg = new NpgsqlConnection(connectionStringBuilder.ToString());
 
 var gameUrl = (string)await redisDatabase.HashGetAsync("game", "url");
 

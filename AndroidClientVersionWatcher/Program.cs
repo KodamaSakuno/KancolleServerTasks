@@ -29,7 +29,11 @@ using var rabbitMqChannel = rabbitMqConnection.CreateModel();
 
 rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
 
-await using var pg = new NpgsqlConnection(configuration["Database"]);
+var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration["Database"])
+{
+    SearchPath = "kancolle_resources",
+};
+await using var pg = new NpgsqlConnection(connectionStringBuilder.ToString());
 
 var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM android_client_version;");
 
