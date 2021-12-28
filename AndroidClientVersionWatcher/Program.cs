@@ -1,19 +1,35 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
 using Serilog;
-using StackExchange.Redis;
 using System;
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 using var client = new HttpClient();
+
+var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
+
+var rabbitMqConnectionFactory = new ConnectionFactory() { HostName = configuration["RabbitMQ:Host"] };
+using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
+using var rabbitMqChannel = rabbitMqConnection.CreateModel();
+
+rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
 
 var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM android_client_version;");
 
@@ -31,18 +47,6 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     logger.Information("Forbidden");
     return;
 }
-
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
-var redisDatabase = redis.GetDatabase();
-
-var rabbitMqConnectionFactory = new ConnectionFactory()
-{
-    HostName = Environment.GetEnvironmentVariable("RabbitMQHost") ?? throw new InvalidOperationException("Missing RabbitMQHost"),
-};
-using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
-using var rabbitMqChannel = rabbitMqConnection.CreateModel();
-
-rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
 
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
@@ -89,6 +93,8 @@ WHERE (latest_resource.resource).value != (previous_resource.resource).value;"))
     rabbitMqChannel.BasicPublish(string.Empty, "AndroidClientFile", null, buffer);
 }
 
-await redisDatabase.ListRightPushAsync("tasks:logs", "Android client version.json updated");
+await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"Android client *version.json* updated
+
+_Last-Modified: {lastModified.ToOffset(TimeSpan.FromHours(8)):G}_", ParseMode.Markdown);
 
 logger.Information("Saved");

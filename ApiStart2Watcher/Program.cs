@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
@@ -10,13 +11,25 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
+
+using var redis = ConnectionMultiplexer.Connect(configuration["Redis:Host"]);
 var redisDatabase = redis.GetDatabase();
 
 using var client = new HttpClient();
+
+var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
 
 var gameUrl = (string)await redisDatabase.HashGetAsync("game", "url");
 
@@ -29,6 +42,9 @@ if (duration >= TimeSpan.FromMinutes(115))
     logger.Information("Token outdated");
     return;
 }
+
+await pg.OpenAsync();
+await using var transaction = await pg.BeginTransactionAsync();
 
 using var request = new HttpRequestMessage(HttpMethod.Post, "http://125.6.189.167/kcsapi/api_start2/getData");
 request.Headers.Referrer = new Uri(gameUrl);
@@ -49,10 +65,6 @@ var obj = (JObject)json["api_data"]["api_mst_const"];
 
 json["api_data"]["api_mst_const"] = new JObject(obj.Properties().OrderBy(r => r.Name));
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
-await pg.OpenAsync();
-await using var transaction = await pg.BeginTransactionAsync();
-
 var argument = new { json = json["api_data"].ToString(Formatting.None) };
 var ra = await pg.ExecuteAsync("INSERT INTO api_start2_history VALUES(now(), @json::jsonb, convert_to(@json, 'UTF8')) ON CONFLICT DO NOTHING;", argument);
 if (ra == 0)
@@ -67,5 +79,7 @@ WHERE current_api_start2.value != excluded.value;", argument);
 await pg.ExecuteAsync("REFRESH MATERIALIZED VIEW api_start2_item_version;");
 
 await transaction.CommitAsync();
+
+await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"*api_start2* updated", ParseMode.Markdown);
 
 logger.Information("Saved");

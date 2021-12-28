@@ -1,23 +1,34 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Serilog;
-using StackExchange.Redis;
 using System;
 using System.Net;
 using System.Net.Http;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-await using var connection = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 using var client = new HttpClient();
 
-var latestTimestamp = (DateTimeOffset?)await connection.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM kcs_const;");
+var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
+
+var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM kcs_const;");
 
 using var request = new HttpRequestMessage(HttpMethod.Get, "http://203.104.209.7/gadget_html5/js/kcs_const.js");
 request.Headers.IfModifiedSince = latestTimestamp;
 
 using var response = await client.SendAsync(request);
+
 if (response.StatusCode == HttpStatusCode.NotModified)
 {
     logger.Information("Not Modified");
@@ -29,14 +40,13 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
-var redisDatabase = redis.GetDatabase();
-
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
-await connection.ExecuteAsync("INSERT INTO kcs_const VALUES(@timestamp, @content);", new { timestamp = lastModified, content = responseString });
+await pg.ExecuteAsync("INSERT INTO kcs_const VALUES(@timestamp, @content);", new { timestamp = lastModified, content = responseString });
 
-await redisDatabase.ListRightPushAsync("tasks:logs", "kcs_const.js updated");
+await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"*kcs_const.js* updated
+
+_Last-Modified: {lastModified.ToOffset(TimeSpan.FromHours(8)):G}_", ParseMode.Markdown);
 
 logger.Information("Saved");

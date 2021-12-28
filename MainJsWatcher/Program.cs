@@ -1,18 +1,28 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Serilog;
-using StackExchange.Redis;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 using var client = new HttpClient();
+
+var bot = new TelegramBotClient(configuration["Telegram:Token"]);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
 
 var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM mainjs;");
 
@@ -31,9 +41,6 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
-var redisDatabase = redis.GetDatabase();
-
 var responseBytes = await response.Content.ReadAsByteArrayAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 var hash = SHA1.HashData(responseBytes);
@@ -45,6 +52,8 @@ File.SetLastWriteTimeUtc(filename, lastModified.UtcDateTime);
 
 await pg.ExecuteAsync("INSERT INTO mainjs VALUES(@timestamp, @hash);", new { timestamp = lastModified, hash });
 
-await redisDatabase.ListRightPushAsync("tasks:logs", "main.js updated");
+await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"HTML5 client *main.js* updated
+
+_Last-Modified: {lastModified.ToOffset(TimeSpan.FromHours(8)):G}_", ParseMode.Markdown);
 
 logger.Information("Saved");

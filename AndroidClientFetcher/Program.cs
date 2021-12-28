@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -9,19 +10,29 @@ using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 Directory.CreateDirectory("/var/android_client/scenes");
 Directory.CreateDirectory("/var/android_client/resources");
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
-
 using var client = new HttpClient();
+
+var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
 
 var rabbitMqConnectionFactory = new ConnectionFactory()
 {
-    HostName = Environment.GetEnvironmentVariable("RabbitMQHost") ?? throw new InvalidOperationException("Missing RabbitMQHost"),
+    HostName = configuration["RabbitMQ:Host"],
     DispatchConsumersAsync = true,
 };
 using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
@@ -45,6 +56,8 @@ consumer.Received += async (sender, e) =>
     await pg.ExecuteAsync("INSERT INTO android_client VALUES(@filename || '.swf', @version, @timestamp);", new { filename, version, timestamp = lastModified });
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
+
+    await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $"{filename} *({version})* saved", ParseMode.Markdown);
 
     logger.Information("Saved: {Filename} ({Version})", filename, version);
 };

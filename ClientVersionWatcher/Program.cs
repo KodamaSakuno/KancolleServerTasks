@@ -1,16 +1,26 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Serilog;
-using StackExchange.Redis;
 using System;
 using System.Net;
 using System.Net.Http;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
-var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
-await using var pg = new NpgsqlConnection(Environment.GetEnvironmentVariable("DatabaseConn") ?? throw new InvalidOperationException("Missing DatabaseConn"));
+using var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 using var client = new HttpClient();
+
+var bot = new TelegramBotClient(configuration["Telegram:Token"], client);
+
+await using var pg = new NpgsqlConnection(configuration["Database"]);
 
 var latestTimestamp = (DateTimeOffset?)await pg.ExecuteScalarAsync<DateTime?>("SELECT max(timestamp) FROM client_version;");
 
@@ -29,15 +39,14 @@ if (response.StatusCode == HttpStatusCode.Forbidden)
     return;
 }
 
-using var redis = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") ?? throw new InvalidOperationException("Missing RedisHost"));
-var redisDatabase = redis.GetDatabase();
-
 var responseString = await response.Content.ReadAsStringAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 
 await pg.ExecuteAsync("INSERT INTO client_version VALUES(@timestamp, @content::jsonb);", new { timestamp = lastModified, content = responseString });
 
-await redisDatabase.ListRightPushAsync("tasks:logs", "HTML5 client version.json updated");
+await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"HTML5 client *version.json* updated
+
+_Last-Modified: {lastModified.ToOffset(TimeSpan.FromHours(8)):G}_", ParseMode.Markdown);
 
 logger.Information("Saved");
 
