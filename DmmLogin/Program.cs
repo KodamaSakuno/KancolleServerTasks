@@ -25,7 +25,7 @@ await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeL
 
 await using var context = await browser.NewContextAsync(File.Exists("/var/app/state.json") ? new()
 {
-    StorageStatePath = "state.json",
+    StorageStatePath = "/var/app/state.json",
 } : null);
 
 var page = await context.NewPageAsync();
