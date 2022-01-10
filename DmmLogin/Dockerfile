@@ -4,12 +4,12 @@ RUN npx playwright install chromium
 FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
 RUN apt-get update && apt-get -y install cron xorg openbox libnss3 libasound2 && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS restore
 WORKDIR /src
 COPY DmmLogin.csproj .
 RUN dotnet restore "DmmLogin.csproj" -r linux-x64
 
-FROM build AS publish
+FROM restore AS publish
 COPY Program.cs .
 RUN dotnet publish "DmmLogin.csproj" -c Release -r linux-x64 --self-contained false -o /app/publish
 

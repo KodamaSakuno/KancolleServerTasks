@@ -1,12 +1,12 @@
 FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
 RUN apt-get update && apt-get -y install cron && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS restore
 WORKDIR /src
 COPY KcsConstWatcher.csproj .
 RUN dotnet restore "KcsConstWatcher.csproj" -r linux-x64
 
-FROM build AS publish
+FROM restore AS publish
 COPY Program.cs .
 RUN dotnet publish "KcsConstWatcher.csproj" -c Release -r linux-x64 --self-contained false -o /app/publish
 
