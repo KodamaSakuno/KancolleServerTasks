@@ -67,6 +67,8 @@ var json = await JObject.LoadAsync(reader);
 
 var obj = (JObject)json["api_data"]["api_mst_const"];
 
+logger.Information("Const: " + obj.ToString(Formatting.None));
+
 json["api_data"]["api_mst_const"] = new JObject(obj.Properties().OrderBy(r => r.Name));
 
 var argument = new { json = json["api_data"].ToString(Formatting.None) };
