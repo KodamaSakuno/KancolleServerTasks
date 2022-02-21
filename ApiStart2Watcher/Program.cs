@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using RabbitMQ.Client;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
@@ -85,6 +86,15 @@ WHERE current_api_start2.value != excluded.value;", argument);
 await pg.ExecuteAsync("REFRESH MATERIALIZED VIEW api_start2_item_version;");
 
 await transaction.CommitAsync();
+
+var rabbitMqConnectionFactory = new ConnectionFactory() { HostName = configuration["RabbitMQ:Host"] };
+using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
+using var rabbitMqChannel = rabbitMqConnection.CreateModel();
+
+const string MasterDataUpdatedExchangeName = "MasterDataUpdated";
+
+rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fanout, true);
+rabbitMqChannel.BasicPublish(MasterDataUpdatedExchangeName, string.Empty, null, Array.Empty<byte>());
 
 await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $@"*api_start2* updated", ParseMode.Markdown);
 
