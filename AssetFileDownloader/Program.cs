@@ -7,6 +7,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -43,7 +44,7 @@ consumer.Received += async (sender, e) =>
     await using var pg = new NpgsqlConnection(connectionString);
     await pg.OpenAsync();
 
-    var message = JsonSerializer.Deserialize<Message>(e.Body.Span);
+    var message = JsonSerializer.Deserialize<Message>(e.Body.Span) ?? throw new InvalidOperationException("Bad message");
 
     using var response = await Policy
         .HandleResult<HttpResponseMessage>(response => !response.IsSuccessStatusCode).Or<TaskCanceledException>().Or<HttpRequestException>()
@@ -72,16 +73,16 @@ consumer.Received += async (sender, e) =>
         using (var cryptoStream = new CryptoStream(memoryStream, sha256, CryptoStreamMode.Write))
             await responseStream.CopyToAsync(cryptoStream);
 
-        var filename = Path.Join(message.Directory, Convert.ToHexString(sha256.Hash));
+        var filename = Path.Join(message.Directory, Convert.ToHexString(sha256.Hash!));
 
-        var timestamp = response.Content.Headers.LastModified!.Value.UtcDateTime;
+        var timestamp = response.Content.Headers.LastModified!.Value;
 
         if (!File.Exists(filename))
         {
             using (var fileStream = File.Create(filename))
                 await fileStream.WriteAsync(buffer.AsMemory(0, contentLength));
 
-            File.SetLastWriteTimeUtc(filename, timestamp);
+            File.SetLastWriteTimeUtc(filename, timestamp.UtcDateTime);
         }
 
         await pg.ExecuteAsync("INSERT INTO asset_timestamp VALUES(@hash, @timestamp) ON CONFLICT DO NOTHING;", new { hash = sha256.Hash, timestamp });
@@ -89,7 +90,11 @@ consumer.Received += async (sender, e) =>
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = e.BasicProperties.CorrelationId;
 
-        rabbitMqChannel.BasicPublish(string.Empty, e.BasicProperties.ReplyTo, null, default);
+        var body = new byte[8 + 32];
+        BinaryPrimitives.WriteInt64LittleEndian(body, timestamp.ToUnixTimeSeconds());
+        sha256.Hash!.CopyTo(body.AsSpan(8));
+
+        rabbitMqChannel.BasicPublish(string.Empty, e.BasicProperties.ReplyTo, properties, body);
 
         rabbitMqChannel.BasicAck(e.DeliveryTag, false);
     }
