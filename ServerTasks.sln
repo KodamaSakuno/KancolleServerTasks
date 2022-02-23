@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerAPI", "ServerAPI\Serv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidShipCGFetcher", "AndroidShipCGFetcher\AndroidShipCGFetcher.csproj", "{C1A567B2-0BDE-474E-A2B2-29E03AEF9048}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssetFileDownloader", "AssetFileDownloader\AssetFileDownloader.csproj", "{0E4A576C-94BB-48F3-80B2-3A38A03F1916}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +141,18 @@ Global
 		{C1A567B2-0BDE-474E-A2B2-29E03AEF9048}.Release|x64.Build.0 = Release|Any CPU
 		{C1A567B2-0BDE-474E-A2B2-29E03AEF9048}.Release|x86.ActiveCfg = Release|Any CPU
 		{C1A567B2-0BDE-474E-A2B2-29E03AEF9048}.Release|x86.Build.0 = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|x64.Build.0 = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Debug|x86.Build.0 = Debug|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|x64.ActiveCfg = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|x64.Build.0 = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|x86.ActiveCfg = Release|Any CPU
+		{0E4A576C-94BB-48F3-80B2-3A38A03F1916}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
