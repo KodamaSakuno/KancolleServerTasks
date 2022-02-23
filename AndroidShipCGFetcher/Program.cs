@@ -69,7 +69,7 @@ updatedEventConsumer.Received += async (sender, e) =>
 
         await redisDatabase.HashSetAsync($"download:android:ship_cg:{shipId}", "version", version);
 
-        rabbitMqChannel.BasicPublish("AssetFileDownload", string.Empty, properties, body);
+        rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
 
     await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('android_ship_cg', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
