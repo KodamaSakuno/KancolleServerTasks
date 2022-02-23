@@ -73,6 +73,8 @@ updatedEventConsumer.Received += async (sender, e) =>
     }
 
     await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('android_ship_cg', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
+
+    await transaction.CommitAsync();
 };
 
 var callbackEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
@@ -80,8 +82,6 @@ callbackEventConsumer.Received += async (sender, e) =>
 {
     await using var pg = new NpgsqlConnection(connectionString);
     await pg.OpenAsync();
-
-    await using var transaction = await pg.BeginTransactionAsync();
 
     var redisDatabase = redis.GetDatabase();
 
@@ -99,9 +99,9 @@ callbackEventConsumer.Received += async (sender, e) =>
         hash,
     });
 
-    await transaction.CommitAsync();
-
     await redisDatabase.KeyDeleteAsync($"download:android:ship_cg:{shipId}");
+
+    rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);

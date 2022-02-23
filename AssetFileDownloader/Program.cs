@@ -73,7 +73,7 @@ consumer.Received += async (sender, e) =>
         using (var cryptoStream = new CryptoStream(memoryStream, sha256, CryptoStreamMode.Write))
             await responseStream.CopyToAsync(cryptoStream);
 
-        var filename = Path.Join(message.Directory, Convert.ToHexString(sha256.Hash!));
+        var filename = Path.Join(message.Directory, Convert.ToHexString(sha256.Hash!).ToLowerInvariant());
 
         var timestamp = response.Content.Headers.LastModified!.Value;
 
