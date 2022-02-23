@@ -129,7 +129,8 @@ static async IAsyncEnumerable<Graphic> EnumerateDiffs(NpgsqlConnection pg)
     foreach (var (id, isPlane, version) in await pg.QueryAsync<(int, bool, int)>("SELECT id, is_plane, current_version FROM slotitem_cg_diff;"))
     {
         yield return new(id, version, "card");
-        yield return new(id, version, "item_character");
+        if ((id, version) is not (42, 1))
+            yield return new(id, version, "item_character");
         yield return new(id, version, "item_on");
         yield return new(id, version, "item_up");
 

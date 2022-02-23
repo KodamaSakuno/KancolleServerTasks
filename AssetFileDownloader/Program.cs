@@ -8,6 +8,7 @@ using RabbitMQ.Client.Events;
 using Serilog;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -37,6 +38,8 @@ using var rabbitMqChannel = rabbitMqConnection.CreateModel();
 rabbitMqChannel.QueueDeclare("AssetFileDownload", true, false, false, null);
 rabbitMqChannel.BasicQos(0, 1, false);
 
+rabbitMqChannel.QueueDeclare("AssetFileNotFound", true, false, false, null);
+
 var consumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 
 consumer.Received += async (sender, e) =>
@@ -51,11 +54,18 @@ consumer.Received += async (sender, e) =>
         .WaitAndRetryAsync(5, count => TimeSpan.FromSeconds(Math.Pow(2, count)), (result, timeSpan, retryCount, context) =>
         {
             if (result.Result is not null)
-                logger.Warning("Request failed with {StatusCode}. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}", result.Result.StatusCode, timeSpan, retryCount);
+                logger.Warning("Request {Url} failed with {StatusCode}. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}", message.Url, result.Result.StatusCode, timeSpan, retryCount);
             else
-                logger.Error(result.Exception, "Request failed with exception. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}", timeSpan, retryCount);
+                logger.Error(result.Exception, "Request {Url} failed with exception. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}", message.Url, timeSpan, retryCount);
         })
         .ExecuteAsync(() => httpClient.GetAsync(message.Url, HttpCompletionOption.ResponseHeadersRead));
+
+    if (response.StatusCode is HttpStatusCode.NotFound)
+    {
+        rabbitMqChannel.BasicPublish(string.Empty, "AssetFileNotFound", e.BasicProperties, e.Body);
+        rabbitMqChannel.BasicAck(e.DeliveryTag, false);
+        return;
+    }
 
     var contentLength = (int)(response.Content.Headers.ContentLength ?? throw new InvalidOperationException("Missing Content-Length"));
 
