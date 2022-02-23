@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
+using RabbitMQ.Client;
 using Serilog;
 using StackExchange.Redis;
 using System;
@@ -11,7 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using RabbitMQ.Client;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
