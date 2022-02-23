@@ -55,7 +55,7 @@ updatedEventConsumer.Received += async (sender, e) =>
 
     var redisDatabase = redis.GetDatabase();
 
-    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_ship_cg_diff;"))
+    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_abyssal_ship_cg_diff;"))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = shipId.ToString();
