@@ -103,7 +103,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..].ToArray();
 
-    await pg.ExecuteAsync("INSERT INTO slotitem_cg VALUES(@slotItem, @type, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO slotitem_cg VALUES(@slotItem, @type::slotitem_cg_type, @version, @hash, @timestamp);", new
     {
         slotItem = slotItemId,
         type,
