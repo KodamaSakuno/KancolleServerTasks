@@ -7,20 +7,25 @@ readonly struct Graphic
     public int Id { get; }
     public int Version { get; }
     public string Type { get; }
+    public bool IsDamaged { get; }
 
     public string Suffix { get; }
 
-    public Graphic(int id, int version, string type)
+    public Graphic(int id, int version, string type, bool isDamaged, string filename)
     {
         Id = id;
         Version = version;
         Type = type;
+        IsDamaged = isDamaged;
 
-        var seed = "slot_" + Type;
+        var seed = !IsDamaged ? "ship_" + Type : "ship_" + Type + "_dmg";
         var key = CreateKey(seed);
         var seedLength = seed.Length;
 
         Suffix = (17 * (Id + 7) * _resourceKeys[(key + Id * seedLength) % 100] % 8973 + 1000).ToString();
+
+        if (Type is "full")
+            Suffix += "_" + filename;
     }
 
     static int CreateKey(string seed)
