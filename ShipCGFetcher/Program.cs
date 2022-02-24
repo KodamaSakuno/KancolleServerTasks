@@ -134,7 +134,7 @@ await Task.Delay(-1);
 
 static async IAsyncEnumerable<Graphic> EnumerateDiffs(NpgsqlConnection pg)
 {
-    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_ship_cg_diff;"))
+    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM ship_cg_diff;"))
     {
         yield return new(shipId, version, "full", false, filename);
         yield return new(shipId, version, "full", true, filename);
