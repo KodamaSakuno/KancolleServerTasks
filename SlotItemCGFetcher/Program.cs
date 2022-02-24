@@ -68,6 +68,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         {
             Url = $"http://203.104.209.199/kcs2/resources/slot/{graphic.Type}/{graphic.Id:000}_{graphic.Suffix}.png",
             Directory = "/var/kancolle/slotitem/pool",
+            Extension = ".png",
         });
 
         await redisDatabase.HashSetAsync($"download:slotitem_cg:{correlationId}", new HashEntry[]

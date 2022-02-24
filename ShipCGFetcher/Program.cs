@@ -72,6 +72,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         {
             Url = string.Format(graphic.IsDamaged ? DamagedUrl : NormalUrl, graphic.Type, graphic.Id, graphic.Suffix),
             Directory = "/var/kancolle/ship_cg/pool",
+            Extension = ".png",
         });
 
         await redisDatabase.HashSetAsync($"download:ship_cg:{correlationId}", new HashEntry[]

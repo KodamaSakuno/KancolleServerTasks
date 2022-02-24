@@ -65,6 +65,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         {
             Url = $"http://203.104.209.71/kcs/resources/swf/ships/{filename}.swf",
             Directory = "/var/kancolle/android_abyssal_ship_cg/pool",
+            Extension = ".swf",
         });
 
         await redisDatabase.HashSetAsync($"download:android:abyssal_ship_cg:{shipId}", "version", version);
