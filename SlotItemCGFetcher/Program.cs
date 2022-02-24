@@ -67,7 +67,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
             Url = $"http://203.104.209.199/kcs2/resources/slot/{graphic.Type}/{graphic.Id:000}_{graphic.Suffix}.png",
-            Directory = "/var/slotitem/pool",
+            Directory = "/var/kancolle/slotitem/pool",
         });
 
         await redisDatabase.HashSetAsync($"download:slotitem_cg:{correlationId}", new HashEntry[]

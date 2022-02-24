@@ -49,7 +49,7 @@ var responseBytes = await response.Content.ReadAsByteArrayAsync();
 var lastModified = response.Content.Headers.LastModified!.Value;
 var hash = SHA1.HashData(responseBytes);
 
-var filename = Path.Join("/var/mainjs", Convert.ToHexString(hash).ToLowerInvariant() + ".js");
+var filename = Path.Join("/var/kancolle/mainjs", Convert.ToHexString(hash).ToLowerInvariant() + ".js");
 
 await File.WriteAllBytesAsync(filename, responseBytes);
 File.SetLastWriteTimeUtc(filename, lastModified.UtcDateTime);
