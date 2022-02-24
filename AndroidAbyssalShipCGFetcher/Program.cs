@@ -64,7 +64,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
             Url = $"http://203.104.209.71/kcs/resources/swf/ships/{filename}.swf",
-            Directory = "/var/android/abyssal_ship_cg/pool",
+            Directory = "/var/kancolle/android_abyssal_ship_cg/pool",
         });
 
         await redisDatabase.HashSetAsync($"download:android:abyssal_ship_cg:{shipId}", "version", version);

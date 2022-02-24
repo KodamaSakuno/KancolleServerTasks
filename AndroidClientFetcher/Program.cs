@@ -21,8 +21,8 @@ using var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .CreateLogger();
 
-Directory.CreateDirectory("/var/android_client/scenes");
-Directory.CreateDirectory("/var/android_client/resources");
+Directory.CreateDirectory("/var/kancolle/android_client/scenes");
+Directory.CreateDirectory("/var/kancolle/android_client/resources");
 
 using var client = new HttpClient();
 
@@ -53,7 +53,7 @@ consumer.Received += async (sender, e) =>
     var (filename, version) = Parse(e.Body.Span);
     var (content, lastModified) = await FetchFileAsync(client, filename + ".swf");
 
-    var localFilename = Path.Join("/var/android_client", $"{filename}_{version}.swf");
+    var localFilename = Path.Join("/var/kancolle/android_client", $"{filename}_{version}.swf");
 
     await File.WriteAllBytesAsync(localFilename, content);
     File.SetLastWriteTimeUtc(localFilename, lastModified.UtcDateTime);
