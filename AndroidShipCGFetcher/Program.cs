@@ -38,9 +38,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackQueueName = "AndroidShipCGCallback";
+const string CallbackExchangeName = "AndroidShipCGCallback";
 
-rabbitMqChannel.QueueDeclare(CallbackQueueName, true, false, false, null);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+
+const string DefaultCallbackQueueName = "AndroidShipCGCallback";
+
+rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
+rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -59,7 +64,7 @@ updatedEventConsumer.Received += async (sender, e) =>
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = shipId.ToString();
-        properties.ReplyTo = CallbackQueueName;
+        properties.ReplyTo = CallbackExchangeName;
 
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -106,7 +111,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);
-rabbitMqChannel.BasicConsume(CallbackQueueName, false, callbackEventConsumer);
+rabbitMqChannel.BasicConsume(DefaultCallbackQueueName, false, callbackEventConsumer);
 
 logger.Information("Waiting...");
 

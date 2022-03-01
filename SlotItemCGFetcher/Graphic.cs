@@ -1,4 +1,4 @@
-﻿namespace ShipCGFetcher;
+﻿namespace SlotItemCGFetcher;
 
 readonly struct Graphic
 {

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
@@ -39,9 +39,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackQueueName = "ShipCGCallback";
+const string CallbackExchangeName = "ShipCGCallback";
 
-rabbitMqChannel.QueueDeclare(CallbackQueueName, true, false, false, null);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+
+const string DefaultCallbackQueueName = "ShipCGCallback";
+
+rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
+rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -62,7 +67,7 @@ updatedEventConsumer.Received += async (sender, e) =>
 
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = correlationId;
-        properties.ReplyTo = CallbackQueueName;
+        properties.ReplyTo = CallbackExchangeName;
 
         const string Prefix = "http://203.104.209.199/kcs2/resources/ship/";
         const string NormalUrl = Prefix + "{0}/{1:0000}_{2}.png";
@@ -126,7 +131,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);
-rabbitMqChannel.BasicConsume(CallbackQueueName, false, callbackEventConsumer);
+rabbitMqChannel.BasicConsume(DefaultCallbackQueueName, false, callbackEventConsumer);
 
 logger.Information("Waiting...");
 

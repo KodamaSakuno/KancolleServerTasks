@@ -104,7 +104,7 @@ consumer.Received += async (sender, e) =>
         BinaryPrimitives.WriteInt64LittleEndian(body, timestamp.ToUnixTimeSeconds());
         sha256.Hash!.CopyTo(body.AsSpan(8));
 
-        rabbitMqChannel.BasicPublish(string.Empty, e.BasicProperties.ReplyTo, properties, body);
+        rabbitMqChannel.BasicPublish(e.BasicProperties.ReplyTo, message.RoutingKey ?? string.Empty, properties, body);
 
         rabbitMqChannel.BasicAck(e.DeliveryTag, false);
     }

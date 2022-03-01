@@ -4,7 +4,7 @@ using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
-using ShipCGFetcher;
+using SlotItemCGFetcher;
 using StackExchange.Redis;
 using System.Buffers.Binary;
 using System.Text.Json;
@@ -39,9 +39,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackQueueName = "SlotItemCGCallback";
+const string CallbackExchangeName = "SlotItemCGCallback";
 
-rabbitMqChannel.QueueDeclare(CallbackQueueName, true, false, false, null);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+
+const string DefaultCallbackQueueName = "SlotItemCGCallback";
+
+rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
+rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -62,7 +67,7 @@ updatedEventConsumer.Received += async (sender, e) =>
 
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = correlationId;
-        properties.ReplyTo = CallbackQueueName;
+        properties.ReplyTo = CallbackExchangeName;
 
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -119,7 +124,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);
-rabbitMqChannel.BasicConsume(CallbackQueueName, false, callbackEventConsumer);
+rabbitMqChannel.BasicConsume(DefaultCallbackQueueName, false, callbackEventConsumer);
 
 logger.Information("Waiting...");
 

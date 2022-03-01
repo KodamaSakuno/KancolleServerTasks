@@ -38,9 +38,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackQueueName = "AndroidFurnitureCallback";
+const string CallbackExchangeName = "AndroidFurnitureCallback";
 
-rabbitMqChannel.QueueDeclare(CallbackQueueName, true, false, false, null);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+
+const string DefaultCallbackQueueName = "AndroidFurnitureCallback";
+
+rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
+rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -59,7 +64,7 @@ updatedEventConsumer.Received += async (sender, e) =>
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = furnitureId.ToString();
-        properties.ReplyTo = CallbackQueueName;
+        properties.ReplyTo = CallbackExchangeName;
 
         var extension = version.HasValue ? ".swf" : ".png";
 
@@ -108,7 +113,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);
-rabbitMqChannel.BasicConsume(CallbackQueueName, false, callbackEventConsumer);
+rabbitMqChannel.BasicConsume(DefaultCallbackQueueName, false, callbackEventConsumer);
 
 logger.Information("Waiting...");
 
