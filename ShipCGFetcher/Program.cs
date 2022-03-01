@@ -48,6 +48,8 @@ const string DefaultCallbackQueueName = "ShipCGCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
+const string RedisTopic = "ship_cg";
+
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -80,7 +82,7 @@ updatedEventConsumer.Received += async (sender, e) =>
             Extension = ".png",
         });
 
-        await redisDatabase.HashSetAsync($"download:ship_cg:{correlationId}", new HashEntry[]
+        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{correlationId}", new HashEntry[]
         {
             new("id", graphic.Id),
             new("type", graphic.Type),
@@ -106,7 +108,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 
     var correlationId = e.BasicProperties.CorrelationId;
 
-    var values = await redisDatabase.HashGetAsync($"download:ship_cg:{correlationId}", new RedisValue[] { "id", "type", "is_damaged", "version" });
+    var values = await redisDatabase.HashGetAsync($"download:{RedisTopic}:{correlationId}", new RedisValue[] { "id", "type", "is_damaged", "version" });
     var shipId = (int)values[0];
     var type = (string)values[1];
     var isDamaged = (bool)values[2];
@@ -125,7 +127,7 @@ callbackEventConsumer.Received += async (sender, e) =>
         hash,
     });
 
-    await redisDatabase.KeyDeleteAsync($"download:ship_cg:{correlationId}");
+    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{correlationId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };

@@ -48,6 +48,8 @@ const string DefaultCallbackQueueName = "SlotItemCGCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
+const string RedisTopic = "slotitem_cg";
+
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -76,7 +78,7 @@ updatedEventConsumer.Received += async (sender, e) =>
             Extension = ".png",
         });
 
-        await redisDatabase.HashSetAsync($"download:slotitem_cg:{correlationId}", new HashEntry[]
+        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{correlationId}", new HashEntry[]
         {
             new("id", graphic.Id),
             new("type", graphic.Type),
@@ -101,7 +103,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 
     var correlationId = e.BasicProperties.CorrelationId;
 
-    var values = await redisDatabase.HashGetAsync($"download:slotitem_cg:{correlationId}", new RedisValue[] { "id", "type", "version" });
+    var values = await redisDatabase.HashGetAsync($"download:{RedisTopic}:{correlationId}", new RedisValue[] { "id", "type", "version" });
     var slotItemId = (int)values[0];
     var type = (string)values[1];
     var version = (int)values[2];
@@ -118,7 +120,7 @@ callbackEventConsumer.Received += async (sender, e) =>
         hash,
     });
 
-    await redisDatabase.KeyDeleteAsync($"download:slotitem_cg:{correlationId}");
+    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{correlationId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };

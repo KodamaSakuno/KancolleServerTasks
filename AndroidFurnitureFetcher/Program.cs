@@ -47,6 +47,8 @@ const string DefaultCallbackQueueName = "AndroidFurnitureCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
+const string RedisTopic = "android:furniture";
+
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -75,7 +77,7 @@ updatedEventConsumer.Received += async (sender, e) =>
             Extension = extension,
         });
 
-        await redisDatabase.HashSetAsync($"download:android:furniture:{furnitureId}", "version", version ?? 1);
+        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{furnitureId}", "version", version ?? 1);
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
@@ -94,7 +96,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     var redisDatabase = redis.GetDatabase();
 
     var furnitureId = int.Parse(e.BasicProperties.CorrelationId);
-    var version = (int)await redisDatabase.HashGetAsync($"download:android:furniture:{furnitureId}", "version");
+    var version = (int)await redisDatabase.HashGetAsync($"download:{RedisTopic}:{furnitureId}", "version");
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..].ToArray();
@@ -107,7 +109,7 @@ callbackEventConsumer.Received += async (sender, e) =>
         hash,
     });
 
-    await redisDatabase.KeyDeleteAsync($"download:android:furniture:{furnitureId}");
+    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{furnitureId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };

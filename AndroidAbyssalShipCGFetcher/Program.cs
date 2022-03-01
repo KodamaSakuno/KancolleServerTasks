@@ -47,6 +47,8 @@ const string DefaultCallbackQueueName = "AndroidAbyssalShipCGCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
+const string RedisTopic = "android:abyssal_ship_cg";
+
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -73,7 +75,7 @@ updatedEventConsumer.Received += async (sender, e) =>
             Extension = ".swf",
         });
 
-        await redisDatabase.HashSetAsync($"download:android:abyssal_ship_cg:{shipId}", "version", version);
+        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{shipId}", "version", version);
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
@@ -92,7 +94,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     var redisDatabase = redis.GetDatabase();
 
     var shipId = int.Parse(e.BasicProperties.CorrelationId);
-    var version = (int)await redisDatabase.HashGetAsync($"download:android:abyssal_ship_cg:{shipId}", "version");
+    var version = (int)await redisDatabase.HashGetAsync($"download:{RedisTopic}:{shipId}", "version");
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..].ToArray();
@@ -105,7 +107,7 @@ callbackEventConsumer.Received += async (sender, e) =>
         hash,
     });
 
-    await redisDatabase.KeyDeleteAsync($"download:android:abyssal_ship_cg:{shipId}");
+    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{shipId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };
