@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PACKAGE_ROOT=$(ls -d1 ~/.nuget/packages/microsoft.playwright/*)
+PACKAGE_ROOT=$(ls -d1 ~/.nuget/packages/microsoft.playwright/* | head -n 1)
 
 cp $PACKAGE_ROOT/buildTransitive/playwright.ps1 .
 cp $PACKAGE_ROOT/lib/net5.0/Microsoft.Playwright.dll .
