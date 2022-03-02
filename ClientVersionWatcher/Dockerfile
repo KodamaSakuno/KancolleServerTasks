@@ -8,7 +8,7 @@ RUN dotnet restore "ClientVersionWatcher.csproj" -r linux-x64
 
 FROM restore AS publish
 COPY Program.cs .
-RUN dotnet publish "ClientVersionWatcher.csproj" -c Release -r linux-x64 --self-contained true -o /app/publish
+RUN dotnet publish "ClientVersionWatcher.csproj" --no-restore -c Release -r linux-x64 --self-contained true -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron

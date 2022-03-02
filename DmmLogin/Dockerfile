@@ -12,7 +12,7 @@ RUN chmod +x install-browser.sh && ./install-browser.sh
 
 FROM restore AS publish
 COPY Program.cs .
-RUN dotnet publish "DmmLogin.csproj" -c Release -r linux-x64 --self-contained true -o /app/publish
+RUN dotnet publish "DmmLogin.csproj" --no-restore -c Release -r linux-x64 --self-contained true -o /app/publish
 
 FROM base AS final
 COPY ./execute-cron /etc/cron.d/execute-cron
