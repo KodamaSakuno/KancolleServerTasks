@@ -67,6 +67,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = shipId.ToString();
         properties.ReplyTo = CallbackExchangeName;
+        properties.ContentType = "application/json";
 
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {

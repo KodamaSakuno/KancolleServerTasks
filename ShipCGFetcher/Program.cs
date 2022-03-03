@@ -70,6 +70,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = correlationId;
         properties.ReplyTo = CallbackExchangeName;
+        properties.ContentType = "application/json";
 
         const string Prefix = "http://203.104.209.199/kcs2/resources/ship/";
         const string NormalUrl = Prefix + "{0}/{1:0000}_{2}.png";

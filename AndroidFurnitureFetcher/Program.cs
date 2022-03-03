@@ -67,6 +67,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = furnitureId.ToString();
         properties.ReplyTo = CallbackExchangeName;
+        properties.ContentType = "application/json";
 
         var extension = version.HasValue ? ".swf" : ".png";
 
