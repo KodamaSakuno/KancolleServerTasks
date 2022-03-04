@@ -6,4 +6,5 @@ sealed class Message
     public string Directory { get; init; } = default!;
     public string? Extension { get; init; }
     public string? RoutingKey { get; init; }
+    public object? Metadata { get; init; }
 }

@@ -5,7 +5,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
 using ShipCGFetcher;
-using StackExchange.Redis;
 using System.Buffers.Binary;
 using System.Text.Json;
 
@@ -16,8 +15,6 @@ var configuration = new ConfigurationBuilder()
 using var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .CreateLogger();
-
-using var redis = ConnectionMultiplexer.Connect(configuration["Redis:Host"]);
 
 var connectionString = new NpgsqlConnectionStringBuilder(configuration["Database"])
 {
@@ -48,8 +45,6 @@ const string DefaultCallbackQueueName = "ShipCGCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
-const string RedisTopic = "ship_cg";
-
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -61,14 +56,9 @@ updatedEventConsumer.Received += async (sender, e) =>
     if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'ship_cg') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
         return;
 
-    var redisDatabase = redis.GetDatabase();
-
     await foreach (var graphic in EnumerateDiffs(pg))
     {
-        var correlationId = Guid.NewGuid().ToString();
-
         var properties = rabbitMqChannel.CreateBasicProperties();
-        properties.CorrelationId = correlationId;
         properties.ReplyTo = CallbackExchangeName;
         properties.ContentType = "application/json";
 
@@ -81,14 +71,7 @@ updatedEventConsumer.Received += async (sender, e) =>
             Url = string.Format(graphic.IsDamaged ? DamagedUrl : NormalUrl, graphic.Type, graphic.Id, graphic.Suffix),
             Directory = "/var/kancolle/ship_cg/pool",
             Extension = ".png",
-        });
-
-        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{correlationId}", new HashEntry[]
-        {
-            new("id", graphic.Id),
-            new("type", graphic.Type),
-            new("is_damaged", graphic.IsDamaged),
-            new("version", graphic.Version),
+            Metadata = new Metadata(graphic.Id, graphic.Type, graphic.IsDamaged, graphic.Version),
         });
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
@@ -105,30 +88,19 @@ callbackEventConsumer.Received += async (sender, e) =>
     await using var pg = new NpgsqlConnection(connectionString);
     await pg.OpenAsync();
 
-    var redisDatabase = redis.GetDatabase();
-
-    var correlationId = e.BasicProperties.CorrelationId;
-
-    var values = await redisDatabase.HashGetAsync($"download:{RedisTopic}:{correlationId}", new RedisValue[] { "id", "type", "is_damaged", "version" });
-    var shipId = (int)values[0];
-    var type = (string)values[1];
-    var isDamaged = (bool)values[2];
-    var version = (int)values[3];
-
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..].ToArray();
+    var (id, type, isDamaged, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 256)..].Span)!;
 
-    await pg.ExecuteAsync("INSERT INTO ship_cg VALUES(@ship, @type::ship_cg_type, @isDamaged, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO ship_cg VALUES(@id, @type::ship_cg_type, @isDamaged, @version, @hash, @timestamp);", new
     {
-        ship = shipId,
+        id,
         type,
         isDamaged,
         version,
         timestamp,
         hash,
     });
-
-    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{correlationId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };

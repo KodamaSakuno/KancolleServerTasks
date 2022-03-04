@@ -1,10 +1,10 @@
-﻿using Dapper;
+﻿using AndroidShipCGFetcher;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
-using StackExchange.Redis;
 using System.Buffers.Binary;
 using System.Text.Json;
 
@@ -15,8 +15,6 @@ var configuration = new ConfigurationBuilder()
 using var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .CreateLogger();
-
-using var redis = ConnectionMultiplexer.Connect(configuration["Redis:Host"]);
 
 var connectionString = new NpgsqlConnectionStringBuilder(configuration["Database"])
 {
@@ -47,8 +45,6 @@ const string DefaultCallbackQueueName = "AndroidShipCGCallback";
 rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
 
-const string RedisTopic = "android:ship_cg";
-
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
 {
@@ -60,12 +56,9 @@ updatedEventConsumer.Received += async (sender, e) =>
     if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'android_ship_cg') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
         return;
 
-    var redisDatabase = redis.GetDatabase();
-
     foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_ship_cg_diff;"))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
-        properties.CorrelationId = shipId.ToString();
         properties.ReplyTo = CallbackExchangeName;
         properties.ContentType = "application/json";
 
@@ -74,9 +67,8 @@ updatedEventConsumer.Received += async (sender, e) =>
             Url = $"http://203.104.209.71/kcs/resources/swf/ships/{filename}.swf",
             Directory = "/var/kancolle/android_ship_cg/pool",
             Extension = ".swf",
+            Metadata = new Metadata(shipId, version),
         });
-
-        await redisDatabase.HashSetAsync($"download:{RedisTopic}:{shipId}", "version", version);
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
@@ -92,23 +84,17 @@ callbackEventConsumer.Received += async (sender, e) =>
     await using var pg = new NpgsqlConnection(connectionString);
     await pg.OpenAsync();
 
-    var redisDatabase = redis.GetDatabase();
-
-    var shipId = int.Parse(e.BasicProperties.CorrelationId);
-    var version = (int)await redisDatabase.HashGetAsync($"download:{RedisTopic}:{shipId}", "version");
-
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
-    var hash = e.Body[8..].ToArray();
+    var hash = e.Body[8..(8 + 256)].ToArray();
+    var (id, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 256)..].Span)!;
 
-    await pg.ExecuteAsync("INSERT INTO android_ship_cg VALUES(@ship, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO android_ship_cg VALUES(@id, @version, @hash, @timestamp);", new
     {
-        ship = shipId,
+        id,
         version,
         timestamp,
         hash,
     });
-
-    await redisDatabase.KeyDeleteAsync($"download:{RedisTopic}:{shipId}");
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
 };

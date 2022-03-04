@@ -100,11 +100,22 @@ consumer.Received += async (sender, e) =>
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.CorrelationId = e.BasicProperties.CorrelationId;
 
-        var body = new byte[8 + 32];
-        BinaryPrimitives.WriteInt64LittleEndian(body, timestamp.ToUnixTimeSeconds());
-        sha256.Hash!.CopyTo(body.AsSpan(8));
+        BinaryPrimitives.WriteInt64LittleEndian(buffer, timestamp.ToUnixTimeSeconds());
+        sha256.Hash!.CopyTo(buffer.AsSpan(8));
 
-        rabbitMqChannel.BasicPublish(e.BasicProperties.ReplyTo, message.RoutingKey ?? string.Empty, properties, body);
+        var position = 8 + 32;
+
+        if (message.Metadata is not null)
+        {
+            using var bufferStream = new MemoryStream(buffer, position, buffer.Length - position);
+            using var jsonWriter = new Utf8JsonWriter(bufferStream);
+
+            JsonSerializer.Serialize(jsonWriter, message.Metadata);
+
+            position += (int)bufferStream.Position;
+        }
+
+        rabbitMqChannel.BasicPublish(e.BasicProperties.ReplyTo, message.RoutingKey ?? string.Empty, properties, buffer.AsMemory(0, position));
 
         rabbitMqChannel.BasicAck(e.DeliveryTag, false);
     }
