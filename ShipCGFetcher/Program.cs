@@ -38,7 +38,7 @@ rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty
 
 const string CallbackExchangeName = "ShipCGCallback";
 
-rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
 const string DefaultCallbackQueueName = "ShipCGCallback";
 

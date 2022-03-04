@@ -38,7 +38,7 @@ rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty
 
 const string CallbackExchangeName = "SlotItemCGCallback";
 
-rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Topic, true);
+rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
 const string DefaultCallbackQueueName = "SlotItemCGCallback";
 
