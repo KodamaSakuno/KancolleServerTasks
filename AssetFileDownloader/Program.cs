@@ -107,6 +107,8 @@ consumer.Received += async (sender, e) =>
 
         if (message.Metadata is not null)
         {
+            position++;
+
             using var bufferStream = new MemoryStream(buffer, position, buffer.Length - position);
             using var jsonWriter = new Utf8JsonWriter(bufferStream);
 
