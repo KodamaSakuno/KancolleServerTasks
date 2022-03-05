@@ -103,7 +103,7 @@ consumer.Received += async (sender, e) =>
         BinaryPrimitives.WriteInt64LittleEndian(buffer, timestamp.ToUnixTimeSeconds());
         sha256.Hash!.CopyTo(buffer.AsSpan(8));
 
-        var position = 8 + 32;
+        var position = 8 + 256;
 
         if (message.Metadata is not null)
         {
