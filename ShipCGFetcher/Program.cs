@@ -36,14 +36,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackExchangeName = "ShipCGCallback";
+const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
 const string InfoComitterQueueName = "ShipCGInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
-rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, string.Empty);
+rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -59,7 +59,7 @@ updatedEventConsumer.Received += async (sender, e) =>
     await foreach (var graphic in EnumerateDiffs(pg))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
-        properties.ReplyTo = CallbackExchangeName;
+        properties.ReplyTo = InfoComitterQueueName;
         properties.ContentType = "application/json";
 
         const string Prefix = "http://203.104.209.199/kcs2/resources/ship/";

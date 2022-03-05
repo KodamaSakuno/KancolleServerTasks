@@ -36,14 +36,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackExchangeName = "AndroidFurnitureCallback";
+const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
 const string InfoComitterQueueName = "AndroidFurnitureInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
-rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, string.Empty);
+rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -59,7 +59,7 @@ updatedEventConsumer.Received += async (sender, e) =>
     foreach (var (furnitureId, type, subId, version, filename) in await pg.QueryAsync<(int, string, int, int?, string?)>("SELECT id, type, sub_id, current_version, current_filename FROM android_furniture_diff;"))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
-        properties.ReplyTo = CallbackExchangeName;
+        properties.ReplyTo = InfoComitterQueueName;
         properties.ContentType = "application/json";
 
         var extension = version.HasValue ? ".swf" : ".png";

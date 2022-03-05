@@ -115,7 +115,7 @@ consumer.Received += async (sender, e) =>
             position += (int)bufferStream.Position;
         }
 
-        rabbitMqChannel.BasicPublish(e.BasicProperties.ReplyTo, message.RoutingKey ?? string.Empty, properties, buffer.AsMemory(0, position));
+        rabbitMqChannel.BasicPublish("AssetDownloadCallback", e.BasicProperties.ReplyTo ?? string.Empty, properties, buffer.AsMemory(0, position));
 
         rabbitMqChannel.BasicAck(e.DeliveryTag, false);
     }

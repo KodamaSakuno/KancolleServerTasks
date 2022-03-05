@@ -36,14 +36,14 @@ rabbitMqChannel.ExchangeDeclare(MasterDataUpdatedExchangeName, ExchangeType.Fano
 var queueName = rabbitMqChannel.QueueDeclare().QueueName;
 rabbitMqChannel.QueueBind(queueName, MasterDataUpdatedExchangeName, string.Empty);
 
-const string CallbackExchangeName = "ShipHomeportVoiceCallback";
+const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
 const string InfoComitterQueueName = "ShipHomeportVoiceInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
-rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, string.Empty);
+rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -59,7 +59,7 @@ updatedEventConsumer.Received += async (sender, e) =>
     await foreach (var voice in EnumerateDiffs(pg))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
-        properties.ReplyTo = CallbackExchangeName;
+        properties.ReplyTo = InfoComitterQueueName;
         properties.ContentType = "application/json";
 
         var body = JsonSerializer.SerializeToUtf8Bytes(new
