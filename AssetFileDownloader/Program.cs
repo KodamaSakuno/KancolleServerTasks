@@ -51,7 +51,7 @@ consumer.Received += async (sender, e) =>
 
     using var response = await Policy
         .HandleResult<HttpResponseMessage>(response => !response.IsSuccessStatusCode).Or<TaskCanceledException>().Or<HttpRequestException>()
-        .WaitAndRetryAsync(3, count => TimeSpan.FromSeconds(Math.Pow(2, count)), (result, timeSpan, retryCount, context) =>
+        .WaitAndRetryAsync(6, count => TimeSpan.FromSeconds(Math.Pow(2, count)), (result, timeSpan, retryCount, context) =>
         {
             if (result.Result is not null)
                 logger.Warning("Request {Url} failed with {StatusCode}. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}", message.Url, result.Result.StatusCode, timeSpan, retryCount);
