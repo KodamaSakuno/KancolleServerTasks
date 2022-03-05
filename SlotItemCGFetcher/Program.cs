@@ -85,7 +85,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     await pg.OpenAsync();
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
-    var hash = e.Body[8..].ToArray();
+    var hash = e.Body[8..(8 + 256)].ToArray();
     var (id, type, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 256)..].Span)!;
 
     await pg.ExecuteAsync("INSERT INTO slotitem_cg VALUES(@id, @type::slotitem_cg_type, @version, @hash, @timestamp);", new

@@ -85,7 +85,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     await pg.OpenAsync();
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
-    var hash = e.Body[8..].ToArray();
+    var hash = e.Body[8..(8 + 256)].ToArray();
     var (shipId, voiceId, date) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 256)..].Span)!;
 
     await pg.ExecuteAsync("INSERT INTO ship_homeport_voice VALUES(@shipId, (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph'), @voiceId, @date, @hash, @timestamp);", new
