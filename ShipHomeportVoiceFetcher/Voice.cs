@@ -20,7 +20,7 @@ readonly struct Voice
 
         Filename = (shipId switch
         {
-            <= 53 => (shipId + 7) * 17 * _resourceKeys[shipId - 1] % 99173 + 100000,
+            <= 53 => (shipId + 7) * 17 * _resourceKeys[voiceId - 1] % 99173 + 100000,
             _ => voiceId,
         }).ToString();
     }
