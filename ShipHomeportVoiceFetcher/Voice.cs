@@ -18,7 +18,7 @@ readonly struct Voice
         Version = version;
         UniqueKey = uniqueKey;
 
-        Filename = (shipId switch
+        Filename = (voiceId switch
         {
             <= 53 => (shipId + 7) * 17 * _resourceKeys[voiceId - 1] % 99173 + 100000,
             _ => voiceId,
