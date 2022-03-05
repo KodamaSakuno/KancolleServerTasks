@@ -40,10 +40,10 @@ const string CallbackExchangeName = "ShipCGCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
-const string DefaultCallbackQueueName = "ShipCGCallback";
+const string InfoComitterQueueName = "ShipCGInfoComitter";
 
-rabbitMqChannel.QueueDeclare(DefaultCallbackQueueName, true, false, false, null);
-rabbitMqChannel.QueueBind(DefaultCallbackQueueName, CallbackExchangeName, string.Empty);
+rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
+rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, string.Empty);
 
 var updatedEventConsumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 updatedEventConsumer.Received += async (sender, e) =>
@@ -106,7 +106,7 @@ callbackEventConsumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(queueName, true, updatedEventConsumer);
-rabbitMqChannel.BasicConsume(DefaultCallbackQueueName, false, callbackEventConsumer);
+rabbitMqChannel.BasicConsume(InfoComitterQueueName, false, callbackEventConsumer);
 
 logger.Information("Waiting...");
 
