@@ -1,2 +1,2 @@
 #!/bin/bash
-/app/ApiStart2Watcher >> /var/log/cron.log 2>&1
+/app/ApiStart2Watcher 2>&1 | tee -a /var/log/cron.log

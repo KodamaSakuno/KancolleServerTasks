@@ -1,2 +1,2 @@
 #!/bin/bash
-/app/KcsConstWatcher >> /var/log/cron.log 2>&1
+/app/KcsConstWatcher 2>&1 | tee -a /var/log/cron.log

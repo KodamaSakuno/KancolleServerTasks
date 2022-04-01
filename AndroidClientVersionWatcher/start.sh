@@ -1,2 +1,2 @@
 #!/bin/bash
-/app/AndroidClientVersionWatcher >> /var/log/cron.log 2>&1
+/app/AndroidClientVersionWatcher 2>&1 | tee -a /var/log/cron.log

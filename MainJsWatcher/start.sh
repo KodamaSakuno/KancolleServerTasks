@@ -1,2 +1,2 @@
 #!/bin/bash
-. /app/.env; /app/MainJsWatcher >> /var/log/cron.log 2>&1
+. /app/.env; /app/MainJsWatcher 2>&1 | tee -a /var/log/cron.log

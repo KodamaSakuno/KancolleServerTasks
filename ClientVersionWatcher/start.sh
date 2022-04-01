@@ -1,2 +1,2 @@
 #!/bin/bash
-/app/ClientVersionWatcher >> /var/log/cron.log 2>&1
+/app/ClientVersionWatcher 2>&1 | tee -a /var/log/cron.log

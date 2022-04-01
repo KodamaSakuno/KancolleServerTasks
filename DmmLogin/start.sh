@@ -1,2 +1,2 @@
 #!/bin/bash
-. /app/.env; /app/DmmLogin >> /var/log/cron.log 2>&1
+. /app/.env; /app/DmmLogin 2>&1 | tee -a /var/log/cron.log
