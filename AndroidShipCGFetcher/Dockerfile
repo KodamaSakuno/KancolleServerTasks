@@ -1,15 +1,15 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS restore
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS restore
 WORKDIR /src
 COPY AndroidShipCGFetcher.csproj .
-RUN dotnet restore "AndroidShipCGFetcher.csproj" -r linux-x64
+RUN dotnet restore "AndroidShipCGFetcher.csproj" -r linux-musl-x64
 
 FROM restore AS publish
 COPY . .
-RUN dotnet publish "AndroidShipCGFetcher.csproj" --no-restore -c Release -r linux-x64 --self-contained true -o /app/publish
+RUN dotnet publish "AndroidShipCGFetcher.csproj" --no-restore -c Release -r linux-musl-x64 --self-contained true -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0
-RUN groupadd --gid 1000 appuser && \
-    useradd --uid 1000 --gid 1000 --shell /bin/bash --home-dir /app appuser
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine
+RUN addgroup --gid 1000 appgroup && \
+    adduser --uid 1000 --ingroup appgroup --home /app --disabled-password appuser
 
 WORKDIR /app
 COPY --from=publish --chown=1000:1000 /app/publish .
