@@ -9,6 +9,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -43,6 +44,10 @@ var rabbitMqConnectionFactory = new ConnectionFactory()
 using var rabbitMqConnection = rabbitMqConnectionFactory.CreateConnection();
 using var rabbitMqChannel = rabbitMqConnection.CreateModel();
 
+const string NewFileExchangeName = "NewFile";
+
+rabbitMqChannel.ExchangeDeclare(NewFileExchangeName, ExchangeType.Topic, true);
+
 rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
 rabbitMqChannel.BasicQos(0, 1, false);
 
@@ -61,6 +66,19 @@ consumer.Received += async (sender, e) =>
     await pg.ExecuteAsync("INSERT INTO android_client VALUES(@filename || '.swf', @version, @timestamp);", new { filename, version, timestamp = lastModified });
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
+
+    var properties = rabbitMqChannel.CreateBasicProperties();
+    properties.ContentType = "application/json";
+
+    rabbitMqChannel.BasicPublish("NewFile", "AndroidClient", properties, JsonSerializer.SerializeToUtf8Bytes(new
+    {
+        Filename = localFilename,
+        Metadata = new
+        {
+            Filename = filename,
+            Version = version,
+        },
+    }));
 
     await bot.SendTextMessageAsync(configuration["Telegram:ChatId"], $"{filename}.swf *({version})* saved", ParseMode.Markdown, disableNotification: true);
 
