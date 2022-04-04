@@ -1,22 +1,25 @@
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0 AS base
-RUN apt-get update && apt-get -y install cron && rm -rf /var/lib/apt/lists/* && touch /var/log/cron.log
-
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS restore
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS restore
 WORKDIR /src
 COPY ApiStart2Watcher.csproj .
-RUN dotnet restore "ApiStart2Watcher.csproj" -r linux-x64
+RUN dotnet restore "ApiStart2Watcher.csproj" -r linux-musl-x64
 
 FROM restore AS publish
 COPY Program.cs .
-RUN dotnet publish "ApiStart2Watcher.csproj" --no-restore -c Release -r linux-x64 --self-contained true -o /app/publish
+RUN dotnet publish "ApiStart2Watcher.csproj" --no-restore -c Release -r linux-musl-x64 --self-contained true -o /app/publish
 
-FROM base AS final
-COPY ./execute-cron /etc/cron.d/execute-cron
-RUN chmod 0644 /etc/cron.d/execute-cron && crontab /etc/cron.d/execute-cron
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine AS final
+RUN addgroup --gid 1000 appgroup && \
+    adduser --uid 1000 --ingroup appgroup --home /app --disabled-password appuser && \
+    touch /var/log/cron.log && \
+    chmod 766 /var/log/cron.log
+
+COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh && \
+    echo "*/10 * * * * /app/start.sh" | crontab -u appuser -
 
 WORKDIR /app
-COPY ./entrypoint.sh ./start.sh ./
-RUN chmod +x entrypoint.sh start.sh
-COPY --from=publish /app/publish .
+COPY --chown=appuser:appgroup ./start.sh .
+RUN chmod +x start.sh
+COPY --from=publish --chown=appuser:appgroup /app/publish .
 
-ENTRYPOINT ./entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
