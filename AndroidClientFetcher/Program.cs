@@ -46,7 +46,7 @@ using var rabbitMqChannel = rabbitMqConnection.CreateModel();
 
 const string NewFileExchangeName = "NewFile";
 
-rabbitMqChannel.ExchangeDeclare(NewFileExchangeName, ExchangeType.Topic, true);
+rabbitMqChannel.ExchangeDeclare(NewFileExchangeName, ExchangeType.Direct, true);
 
 rabbitMqChannel.QueueDeclare("AndroidClientFile", true, false, false, null);
 rabbitMqChannel.BasicQos(0, 1, false);
