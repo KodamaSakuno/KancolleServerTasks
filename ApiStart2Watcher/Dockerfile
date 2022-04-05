@@ -15,6 +15,7 @@ RUN addgroup --gid 1000 appgroup && \
 
 COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh && \
+    echo | crontab - && \
     echo "*/10 * * * * /app/start.sh" | crontab -u appuser -
 
 WORKDIR /app
