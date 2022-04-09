@@ -72,13 +72,13 @@ consumer.Received += async (sender, e) =>
         if (!repo.RetrieveStatus().IsDirty)
             continue;
 
-        var timestamp = new DateTimeOffset(version, TimeSpan.FromHours(9));
+        var timestamp = new DateTimeOffset(version);
 
         Commands.Stage(repo, "*");
 
         var signature = new Signature("神樹桜乃", "kodama@sakuno.moe", timestamp);
 
-        repo.Commit(timestamp.ToString("yy.MM.dd HH:mm:ss"), signature, signature);
+        repo.Commit(timestamp.ToOffset(TimeSpan.FromHours(9)).ToString("yy.MM.dd HH:mm:ss"), signature, signature);
     }
 
     rabbitMqChannel.BasicAck(e.DeliveryTag, false);
