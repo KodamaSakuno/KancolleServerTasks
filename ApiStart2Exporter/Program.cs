@@ -85,3 +85,5 @@ consumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(QueueName, false, consumer);
+
+await Task.Delay(-1);
