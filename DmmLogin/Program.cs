@@ -13,19 +13,16 @@ using var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .CreateLogger();
 
-Directory.CreateDirectory("/var/app");
+const string StateFilename = "/var/playwright/dmm.json";
 
 using var redis = ConnectionMultiplexer.Connect(configuration["Redis:Host"]);
 
 using var playwright = await Playwright.CreateAsync();
-await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions()
-{
-    Args = new[] { "--no-sandbox" },
-});
+await using var browser = await playwright.Chromium.ConnectAsync(configuration["Playwright:Endpoint"]);
 
-await using var context = await browser.NewContextAsync(File.Exists("/var/app/state.json") ? new()
+await using var context = await browser.NewContextAsync(File.Exists(StateFilename) ? new()
 {
-    StorageStatePath = "/var/app/state.json",
+    StorageStatePath = StateFilename,
 } : null);
 
 var page = await context.NewPageAsync();
@@ -60,7 +57,7 @@ if (response.Url is "http://games.dmm.com/detail/kancolle/")
 
     await context.StorageStateAsync(new()
     {
-        Path = "/var/app/state.json",
+        Path = StateFilename,
     });
 }
 
