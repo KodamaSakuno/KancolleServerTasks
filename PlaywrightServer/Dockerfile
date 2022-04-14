@@ -1,6 +1,5 @@
 FROM ubuntu:focal
 
-ENV NPM_CONFIG_LOGLEVEL info
 ENV NODE_VERSION 16.14.2
 
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
@@ -49,7 +48,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
   && addgroup --gid 1000 appgroup \
-  && adduser --uid 1000 --ingroup appgroup --home /app --disabled-password appuser
+  && adduser --uid 1000 --ingroup appgroup --no-create-home --disabled-password appuser
 
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD true
 ENV PLAYWRIGHT_BROWSERS_PATH /ms-playwright
@@ -61,7 +60,8 @@ RUN npm install && \
     npx playwright install chromium --with-deps && rm -rf /var/lib/apt/lists/* && \
     chmod -R 777 /ms-playwright && \
     npm cache clean --force && \
-    mkdir -p /var/playwright && chown appuser:appgroup /var/playwright
+    mkdir -p /var/playwright && chown appuser:appgroup /var/playwright && \
+    chown -R appuser:appgroup /app
 
 COPY index.mjs .
 
