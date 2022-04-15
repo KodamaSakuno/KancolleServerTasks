@@ -27,9 +27,9 @@ await using var context = await browser.NewContextAsync(File.Exists(StateFilenam
 
 var page = await context.NewPageAsync();
 
-var response = await page.GotoAsync("http://games.dmm.com/detail/kancolle/", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+var response = await page.GotoAsync("https://games.dmm.com/detail/kancolle/", new() { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-if (response.Url is "http://games.dmm.com/detail/kancolle/")
+if (response.Url is "https://games.dmm.com/detail/kancolle/")
 {
     logger.Information("Login");
 
