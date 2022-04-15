@@ -20,6 +20,8 @@ async function closeBrowser() {
 const activeConnections = new Set();
 
 const server = createServer(async client => {
+    console.log(`New connection from ${client.remoteAddress}`);
+
     const browser = await ensureBrowser();
     const wsEndpoint = new URL(browser.wsEndpoint());
     const server = createConnection(wsEndpoint.port);
