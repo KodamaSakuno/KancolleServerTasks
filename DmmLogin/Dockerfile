@@ -1,3 +1,5 @@
+FROM node:lts-alpine AS node-alpine
+
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS restore
 WORKDIR /src
 COPY DmmLogin.csproj .
@@ -6,6 +8,7 @@ RUN dotnet restore "DmmLogin.csproj" -r linux-musl-x64
 FROM restore AS publish
 COPY Program.cs .
 RUN dotnet publish "DmmLogin.csproj" --no-restore -c Release -r linux-musl-x64 --self-contained true -o /app/publish
+COPY --from=node-alpine /usr/local/bin/node /app/publish/.playwright/node/linux/node
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine AS final
 RUN addgroup --gid 1000 appgroup && \
