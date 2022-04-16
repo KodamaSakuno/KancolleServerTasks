@@ -12,7 +12,7 @@ RUN addgroup --gid 1000 appgroup && \
     adduser --uid 1000 --ingroup appgroup --home /app --disabled-password appuser
 
 WORKDIR /app
-COPY --from=publish --chown=1000:1000 /app/publish .
+COPY --from=publish --chown=appuser:appgroup /app/publish .
 
 USER appuser
 ENTRYPOINT ["./AndroidClientFetcher"]
