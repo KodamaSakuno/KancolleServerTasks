@@ -1,10 +1,10 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
-using SlotItemCGFetcher;
+using ShipImageFetcher;
 using System.Buffers.Binary;
 using System.Text.Json;
 
@@ -40,7 +40,7 @@ const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
-const string InfoComitterQueueName = "SlotItemCGInfoComitter";
+const string InfoComitterQueueName = "ShipImageInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
@@ -53,7 +53,7 @@ updatedEventConsumer.Received += async (sender, e) =>
 
     await using var transaction = await pg.BeginTransactionAsync();
 
-    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'slotitem_cg') FROM api_start2_item_version WHERE key = 'api_mst_slotitem';"))
+    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'ship_image') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
         return;
 
     await foreach (var graphic in EnumerateDiffs(pg))
@@ -62,18 +62,22 @@ updatedEventConsumer.Received += async (sender, e) =>
         properties.ReplyTo = InfoComitterQueueName;
         properties.ContentType = "application/json";
 
+        const string Prefix = "http://203.104.209.199/kcs2/resources/ship/";
+        const string NormalUrl = Prefix + "{0}/{1:0000}_{2}.png";
+        const string DamagedUrl = Prefix + "{0}_dmg/{1:0000}_{2}.png";
+
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            Url = $"http://203.104.209.199/kcs2/resources/slot/{graphic.Type}/{graphic.Id:000}_{graphic.Suffix}.png",
-            Directory = "/var/kancolle/slotitem/pool",
+            Url = string.Format(graphic.IsDamaged ? DamagedUrl : NormalUrl, graphic.Type, graphic.Id, graphic.Suffix),
+            Directory = "/var/kancolle/ship_image/pool",
             Extension = ".png",
-            Metadata = new Metadata(graphic.Id, graphic.Type, graphic.Version),
+            Metadata = new Metadata(graphic.Id, graphic.Type, graphic.IsDamaged, graphic.Version),
         });
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
 
-    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('slotitem_cg', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_slotitem')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
+    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('ship_image', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
 
     await transaction.CommitAsync();
 };
@@ -86,12 +90,13 @@ callbackEventConsumer.Received += async (sender, e) =>
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..(8 + 32)].ToArray();
-    var (id, type, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 32 + 1)..].Span)!;
+    var (id, type, isDamaged, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 32 + 1)..].Span)!;
 
-    await pg.ExecuteAsync("INSERT INTO slotitem_cg VALUES(@id, @type::slotitem_cg_type, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO ship_image VALUES(@id, @type::ship_image_type, @isDamaged, @version, @hash, @timestamp);", new
     {
         id,
         type,
+        isDamaged,
         version,
         timestamp,
         hash,
@@ -109,17 +114,15 @@ await Task.Delay(-1);
 
 static async IAsyncEnumerable<Graphic> EnumerateDiffs(NpgsqlConnection pg)
 {
-    foreach (var (id, isPlane, version) in await pg.QueryAsync<(int, bool, int)>("SELECT id, is_plane, current_version FROM slotitem_cg_diff;"))
+    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM ship_image_diff;"))
     {
-        yield return new(id, version, "card");
-        if ((id, version) is not (42, 1))
-            yield return new(id, version, "item_character");
-        yield return new(id, version, "item_on");
-        yield return new(id, version, "item_up");
-
-        if (!isPlane)
-            continue;
-
-        yield return new(id, version, "airunit_fairy");
+        yield return new(shipId, version, "full", false, filename);
+        yield return new(shipId, version, "full", true, filename);
+        yield return new(shipId, version, "card", false, filename);
+        yield return new(shipId, version, "card", true, filename);
+        yield return new(shipId, version, "character_up", false, filename);
+        yield return new(shipId, version, "character_up", true, filename);
+        yield return new(shipId, version, "remodel", false, filename);
+        yield return new(shipId, version, "remodel", true, filename);
     }
 }

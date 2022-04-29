@@ -1,11 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS restore
 WORKDIR /src
-COPY ShipCGFetcher.csproj .
-RUN dotnet restore "ShipCGFetcher.csproj" -r linux-musl-x64
+COPY ShipImageFetcher.csproj .
+RUN dotnet restore "ShipImageFetcher.csproj" -r linux-musl-x64
 
 FROM restore AS publish
 COPY . .
-RUN dotnet publish "ShipCGFetcher.csproj" --no-restore -c Release -r linux-musl-x64 --self-contained true -o /app/publish
+RUN dotnet publish "ShipImageFetcher.csproj" --no-restore -c Release -r linux-musl-x64 --self-contained true -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine
 RUN addgroup --gid 1000 appgroup && \
@@ -15,4 +15,4 @@ WORKDIR /app
 COPY --from=publish --chown=appuser:appgroup /app/publish .
 
 USER appuser
-ENTRYPOINT ["./ShipCGFetcher"]
+ENTRYPOINT ["./ShipImageFetcher"]

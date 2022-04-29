@@ -1,10 +1,10 @@
-﻿using AndroidAbyssalShipCGFetcher;
-using Dapper;
+﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog;
+using SlotItemImageFetcher;
 using System.Buffers.Binary;
 using System.Text.Json;
 
@@ -40,7 +40,7 @@ const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
-const string InfoComitterQueueName = "AndroidAbyssalShipCGInfoComitter";
+const string InfoComitterQueueName = "SlotItemImageInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
@@ -53,10 +53,10 @@ updatedEventConsumer.Received += async (sender, e) =>
 
     await using var transaction = await pg.BeginTransactionAsync();
 
-    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'android_abyssal_ship_cg') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
+    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'slotitem_image') FROM api_start2_item_version WHERE key = 'api_mst_slotitem';"))
         return;
 
-    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_abyssal_ship_cg_diff;"))
+    await foreach (var graphic in EnumerateDiffs(pg))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.ReplyTo = InfoComitterQueueName;
@@ -64,16 +64,16 @@ updatedEventConsumer.Received += async (sender, e) =>
 
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            Url = $"http://203.104.209.71/kcs/resources/swf/ships/{filename}.swf",
-            Directory = "/var/kancolle/android_abyssal_ship_cg/pool",
-            Extension = ".swf",
-            Metadata = new Metadata(shipId, version),
+            Url = $"http://203.104.209.199/kcs2/resources/slot/{graphic.Type}/{graphic.Id:000}_{graphic.Suffix}.png",
+            Directory = "/var/kancolle/slotitem/pool",
+            Extension = ".png",
+            Metadata = new Metadata(graphic.Id, graphic.Type, graphic.Version),
         });
 
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
 
-    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('android_abyssal_ship_cg', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
+    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('slotitem_image', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_slotitem')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
 
     await transaction.CommitAsync();
 };
@@ -86,11 +86,12 @@ callbackEventConsumer.Received += async (sender, e) =>
 
     var timestamp = DateTimeOffset.FromUnixTimeSeconds(BinaryPrimitives.ReadInt64LittleEndian(e.Body.Span));
     var hash = e.Body[8..(8 + 32)].ToArray();
-    var (id, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 32 + 1)..].Span)!;
+    var (id, type, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 32 + 1)..].Span)!;
 
-    await pg.ExecuteAsync("INSERT INTO android_abyssal_ship_cg VALUES(@id, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO slotitem_image VALUES(@id, @type::slotitem_image_type, @version, @hash, @timestamp);", new
     {
         id,
+        type,
         version,
         timestamp,
         hash,
@@ -105,3 +106,20 @@ rabbitMqChannel.BasicConsume(InfoComitterQueueName, false, callbackEventConsumer
 logger.Information("Waiting...");
 
 await Task.Delay(-1);
+
+static async IAsyncEnumerable<Graphic> EnumerateDiffs(NpgsqlConnection pg)
+{
+    foreach (var (id, isPlane, version) in await pg.QueryAsync<(int, bool, int)>("SELECT id, is_plane, current_version FROM slotitem_image_diff;"))
+    {
+        yield return new(id, version, "card");
+        if ((id, version) is not (42, 1))
+            yield return new(id, version, "item_character");
+        yield return new(id, version, "item_on");
+        yield return new(id, version, "item_up");
+
+        if (!isPlane)
+            continue;
+
+        yield return new(id, version, "airunit_fairy");
+    }
+}

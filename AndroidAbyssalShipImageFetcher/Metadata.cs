@@ -1,3 +1,3 @@
-namespace AndroidShipCGFetcher;
+namespace AndroidAbyssalShipImageFetcher;
 
 internal record Metadata(int Id, int Version);

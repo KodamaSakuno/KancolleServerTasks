@@ -1,4 +1,4 @@
-﻿using AndroidShipCGFetcher;
+﻿using AndroidAbyssalShipImageFetcher;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -40,7 +40,7 @@ const string CallbackExchangeName = "AssetDownloadCallback";
 
 rabbitMqChannel.ExchangeDeclare(CallbackExchangeName, ExchangeType.Direct, true);
 
-const string InfoComitterQueueName = "AndroidShipCGInfoComitter";
+const string InfoComitterQueueName = "AndroidAbyssalShipImageInfoComitter";
 
 rabbitMqChannel.QueueDeclare(InfoComitterQueueName, true, false, false, null);
 rabbitMqChannel.QueueBind(InfoComitterQueueName, CallbackExchangeName, InfoComitterQueueName);
@@ -53,10 +53,10 @@ updatedEventConsumer.Received += async (sender, e) =>
 
     await using var transaction = await pg.BeginTransactionAsync();
 
-    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'android_ship_cg') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
+    if (await pg.ExecuteScalarAsync<bool>("SELECT max(version) = (SELECT version FROM downloaded_version WHERE name = 'android_abyssal_ship_image') FROM api_start2_item_version WHERE key = 'api_mst_shipgraph';"))
         return;
 
-    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_ship_cg_diff;"))
+    foreach (var (shipId, version, filename) in await pg.QueryAsync<(int, int, string)>("SELECT id, current_version, current_filename FROM android_abyssal_ship_image_diff;"))
     {
         var properties = rabbitMqChannel.CreateBasicProperties();
         properties.ReplyTo = InfoComitterQueueName;
@@ -65,7 +65,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         var body = JsonSerializer.SerializeToUtf8Bytes(new
         {
             Url = $"http://203.104.209.71/kcs/resources/swf/ships/{filename}.swf",
-            Directory = "/var/kancolle/android_ship_cg/pool",
+            Directory = "/var/kancolle/android_abyssal_ship_image/pool",
             Extension = ".swf",
             Metadata = new Metadata(shipId, version),
         });
@@ -73,7 +73,7 @@ updatedEventConsumer.Received += async (sender, e) =>
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileDownload", properties, body);
     }
 
-    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('android_ship_cg', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
+    await pg.ExecuteAsync("INSERT INTO downloaded_version VALUES('android_abyssal_ship_image', (SELECT max(version) FROM api_start2_item_version WHERE key = 'api_mst_shipgraph')) ON CONFLICT (name) DO UPDATE SET version = excluded.version;");
 
     await transaction.CommitAsync();
 };
@@ -88,7 +88,7 @@ callbackEventConsumer.Received += async (sender, e) =>
     var hash = e.Body[8..(8 + 32)].ToArray();
     var (id, version) = JsonSerializer.Deserialize<Metadata>(e.Body[(8 + 32 + 1)..].Span)!;
 
-    await pg.ExecuteAsync("INSERT INTO android_ship_cg VALUES(@id, @version, @hash, @timestamp);", new
+    await pg.ExecuteAsync("INSERT INTO android_abyssal_ship_image VALUES(@id, @version, @hash, @timestamp);", new
     {
         id,
         version,
