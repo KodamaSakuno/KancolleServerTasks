@@ -63,6 +63,8 @@ consumer.Received += async (sender, e) =>
 
     if (response.StatusCode is HttpStatusCode.NotFound)
     {
+        e.BasicProperties.Persistent = true;
+
         rabbitMqChannel.BasicPublish(string.Empty, "AssetFileNotFound", e.BasicProperties, e.Body);
         rabbitMqChannel.BasicAck(e.DeliveryTag, false);
         return;
