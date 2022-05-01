@@ -39,6 +39,7 @@ rabbitMqChannel.QueueDeclare("AssetFileDownload", true, false, false, null);
 rabbitMqChannel.BasicQos(0, 1, false);
 
 rabbitMqChannel.QueueDeclare("AssetFileNotFound", true, false, false, null);
+rabbitMqChannel.QueueDeclare("AssetFilePendingToCheck", true, false, false, null);
 
 var consumer = new AsyncEventingBasicConsumer(rabbitMqChannel);
 
@@ -68,6 +69,15 @@ consumer.Received += async (sender, e) =>
     }
 
     var contentLength = (int)(response.Content.Headers.ContentLength ?? throw new InvalidOperationException("Missing Content-Length"));
+
+    if (contentLength is 0)
+    {
+        e.BasicProperties.Persistent = true;
+
+        rabbitMqChannel.BasicPublish(string.Empty, "AssetFilePendingToCheck", e.BasicProperties, e.Body);
+        rabbitMqChannel.BasicAck(e.DeliveryTag, false);
+        return;
+    }
 
     using var responseStream = await response.Content.ReadAsStreamAsync();
 
