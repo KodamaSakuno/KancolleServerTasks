@@ -39,6 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiStart2Exporter", "ApiSta
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShipVoiceFetcher", "ShipVoiceFetcher\ShipVoiceFetcher.csproj", "{555B956F-DE06-4C17-A748-282D7AC59B2C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidClientExporter", "AndroidClientExporter\AndroidClientExporter.csproj", "{3A29910B-A229-4F29-A377-26EC03F076C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -241,6 +243,18 @@ Global
 		{555B956F-DE06-4C17-A748-282D7AC59B2C}.Release|x64.Build.0 = Release|Any CPU
 		{555B956F-DE06-4C17-A748-282D7AC59B2C}.Release|x86.ActiveCfg = Release|Any CPU
 		{555B956F-DE06-4C17-A748-282D7AC59B2C}.Release|x86.Build.0 = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|x64.Build.0 = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x64.ActiveCfg = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x64.Build.0 = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
