@@ -45,6 +45,8 @@ consumer.Received += async (sender, e) =>
     var message = JsonSerializer.Deserialize<Message>(e.Body.Span) ?? throw new InvalidOperationException("Bad message");
     var (filename, version) = message.Metadata;
 
+    logger.Information($"Exporting {filename} - {version}");
+
     var sourcePath = Path.Join(RepoPath, filename);
 
     if (Directory.Exists(sourcePath))
@@ -86,6 +88,8 @@ consumer.Received += async (sender, e) =>
 };
 
 rabbitMqChannel.BasicConsume(QueueName, false, consumer);
+
+await Task.Delay(-1);
 
 record Message(string Filename, Metadata Metadata);
 record Metadata(string Filename, string Version);
