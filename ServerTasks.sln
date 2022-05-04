@@ -37,9 +37,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShipHomeportVoiceFetcher", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiStart2Exporter", "ApiStart2Exporter\ApiStart2Exporter.csproj", "{83572817-17E3-48E9-9794-826318865670}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShipVoiceFetcher", "ShipVoiceFetcher\ShipVoiceFetcher.csproj", "{555B956F-DE06-4C17-A748-282D7AC59B2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShipVoiceFetcher", "ShipVoiceFetcher\ShipVoiceFetcher.csproj", "{555B956F-DE06-4C17-A748-282D7AC59B2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidClientExporter", "AndroidClientExporter\AndroidClientExporter.csproj", "{3A29910B-A229-4F29-A377-26EC03F076C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidClientExporter", "AndroidClientExporter\AndroidClientExporter.csproj", "{3A29910B-A229-4F29-A377-26EC03F076C3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FurnitureFetcher", "FurnitureFetcher\FurnitureFetcher.csproj", "{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -255,6 +257,18 @@ Global
 		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x64.Build.0 = Release|Any CPU
 		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x86.ActiveCfg = Release|Any CPU
 		{3A29910B-A229-4F29-A377-26EC03F076C3}.Release|x86.Build.0 = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|x64.Build.0 = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Debug|x86.Build.0 = Debug|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|x64.ActiveCfg = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|x64.Build.0 = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|x86.ActiveCfg = Release|Any CPU
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -273,6 +287,7 @@ Global
 		{9F81BF5B-2008-4840-8BA6-52130D036AE9} = {6E8D64EE-A471-4CD6-96E3-21AD4C303317}
 		{6D06B9F0-A401-4ABF-B6FD-EA73C1EB1540} = {6E8D64EE-A471-4CD6-96E3-21AD4C303317}
 		{555B956F-DE06-4C17-A748-282D7AC59B2C} = {6E8D64EE-A471-4CD6-96E3-21AD4C303317}
+		{D03B9BC6-3A51-430E-8F20-EF5786E33FC0} = {6E8D64EE-A471-4CD6-96E3-21AD4C303317}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0FC203BC-ACF9-486B-B7B4-6BE25A8B6F2F}
