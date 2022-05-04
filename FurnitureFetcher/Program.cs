@@ -112,14 +112,13 @@ static async IAsyncEnumerable<Asset> EnumerateDiffs(NpgsqlConnection pg)
 {
     foreach (var (id, isActive, version) in await pg.QueryAsync<(int, bool, int)>("SELECT id, is_active, current_version FROM furniture_diff;"))
     {
-        yield return new(id, version, "thumbnail");
-
         if (!isActive)
         {
             yield return new(id, version, "normal", "static_image");
             continue;
         }
 
+        yield return new(id, version, "thumbnail");
         yield return new(id, version, "movable", "animation_sprite");
         yield return new(id, version, "scripts", "animation_script");
     }
