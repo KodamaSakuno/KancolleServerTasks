@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 using RabbitMQ.Client;
 using Serilog;
@@ -10,6 +11,12 @@ using System.Net.Http;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+
+var host = new HostBuilder()
+    .ConfigureLogging(options =>
+    {
+
+    })
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
